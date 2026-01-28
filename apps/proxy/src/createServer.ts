@@ -9,13 +9,13 @@ import { transformResponse } from './transform/response.js'
 import { createStreamTransformer } from './transform/streaming.js'
 import { executeWebSearch, formatAsToolResult } from './services/webSearch.js'
 import { isCopilotCLIAvailable } from './utils/validation.js'
-import { detectWebSearchRequest, isSuggestionRequest, getXInitiator, getSystemText } from './utils/detection.js'
+import { detectWebSearchRequest, isSuggestionRequest, isSidecarRequest, getXInitiator, getSystemText } from './utils/detection.js'
 import { buildEmptyStreamingResponse, buildEmptyNonStreamingResponse, setStreamingHeaders } from './utils/sse.js'
 import {
   buildWebSearchStreamingResponse,
   buildWebSearchNonStreamingResponse,
 } from './handlers/webSearchResponse.js'
-import { COPILOT_API_URL, COPILOT_HEADERS, FREE_SUGGESTION_MODEL } from './constants.js'
+import { COPILOT_API_URL, COPILOT_HEADERS, FREE_MODEL } from './constants.js'
 import type { AnthropicRequest } from './types/anthropic.js'
 import type { OpenAIResponse } from './types/openai.js'
 
@@ -278,9 +278,14 @@ export async function createProxyServer(options: ProxyServerOptions): Promise<Pr
       }
     }
 
-    // Route suggestion requests to free model (gpt-4.1)
+    // Route suggestion requests to free model
     if (isSuggestionRequest(anthropicRequest)) {
-      return handleSuggestionRequest(anthropicRequest, credentials, requestId, startTime, reply, fastify.log, log, authFile)
+      return handleFreeModelRequest(anthropicRequest, credentials, requestId, startTime, reply, fastify.log, log, authFile, 'suggestion')
+    }
+
+    // Route sidecar requests (file tracking, title gen) to free model
+    if (isSidecarRequest(anthropicRequest)) {
+      return handleFreeModelRequest(anthropicRequest, credentials, requestId, startTime, reply, fastify.log, log, authFile, 'sidecar')
     }
 
     // Normal request - forward to Copilot
@@ -369,8 +374,8 @@ async function handleWebSearchRequest(
   }
 }
 
-// Handle suggestion requests - forward to free model (gpt-4.1)
-async function handleSuggestionRequest(
+// Handle requests that should be routed to free model (suggestions, sidecars)
+async function handleFreeModelRequest(
   request: AnthropicRequest,
   credentials: StoredCredentials,
   requestId: string,
@@ -378,22 +383,23 @@ async function handleSuggestionRequest(
   reply: { header: (k: string, v: string) => void; send: (d: unknown) => unknown; code: (c: number) => void },
   logger: { info: (obj: object) => void; error: (obj: object) => void },
   log: (entry: Record<string, unknown>) => Promise<void>,
-  authFile?: string
+  authFile?: string,
+  requestType: 'suggestion' | 'sidecar' = 'suggestion'
 ) {
-  logger.info({ msg: 'Suggestion request - routing to free model', model: FREE_SUGGESTION_MODEL })
+  logger.info({ msg: `${requestType} request - routing to free model`, model: FREE_MODEL })
 
   await log({
     timestamp: new Date().toISOString(),
     requestId,
     type: 'request',
-    suggestion: true,
+    [requestType]: true,
     model: request.model,
-    routedModel: FREE_SUGGESTION_MODEL,
+    routedModel: FREE_MODEL,
   })
 
   const openaiRequest = transformRequest(request)
   // Override model to free model
-  openaiRequest.model = FREE_SUGGESTION_MODEL
+  openaiRequest.model = FREE_MODEL
 
   const copilotToken = await getValidCopilotToken(credentials, authFile)
 
@@ -403,7 +409,7 @@ async function handleSuggestionRequest(
       ...COPILOT_HEADERS,
       'Content-Type': 'application/json',
       Authorization: `Bearer ${copilotToken}`,
-      'X-Initiator': 'agent', // Suggestions are always free
+      'X-Initiator': 'agent', // Free model requests don't need billing
     },
     body: JSON.stringify(openaiRequest),
   })
@@ -417,7 +423,7 @@ async function handleSuggestionRequest(
     reply.header('Cache-Control', 'no-cache')
     reply.header('Connection', 'keep-alive')
 
-    const transformed = response.body!.pipeThrough(createStreamTransformer(FREE_SUGGESTION_MODEL))
+    const transformed = response.body!.pipeThrough(createStreamTransformer(FREE_MODEL))
     return reply.send(transformed)
   }
 
@@ -431,7 +437,7 @@ async function handleSuggestionRequest(
     type: 'response',
     statusCode: 200,
     responseTime: Date.now() - startTime,
-    suggestion: true,
+    [requestType]: true,
   })
 
   return anthropicResponse

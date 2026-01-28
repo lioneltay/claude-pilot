@@ -5,6 +5,8 @@ import {
   WEB_SEARCH_SYSTEM_PATTERN,
   WEB_SEARCH_MESSAGE_PATTERN,
   SUGGESTION_MODE_PATTERN,
+  SIDECAR_PATTERNS,
+  SUBAGENT_PATTERNS,
 } from '../constants.js'
 
 /**
@@ -68,9 +70,55 @@ export function isSuggestionRequest(request: AnthropicRequest): boolean {
 }
 
 /**
- * Determine the X-Initiator header value based on the last message role
+ * Check if a message contains a tool_result block
+ */
+function hasToolResult(message: AnthropicRequest['messages'][0]): boolean {
+  if (typeof message.content === 'string') return false
+  return message.content.some((block) => block.type === 'tool_result')
+}
+
+/**
+ * Check if request is a sidecar utility call (file tracking, title gen, etc.)
+ * These are synthetic requests spawned by Claude Code, not direct user prompts.
+ */
+export function isSidecarRequest(request: AnthropicRequest): boolean {
+  const systemText = getSystemText(request)
+  return SIDECAR_PATTERNS.some((pattern) => systemText.includes(pattern))
+}
+
+/**
+ * Check if request is a subagent (Explore, etc.)
+ * These are synthetic requests spawned by Claude Code, not direct user prompts.
+ */
+export function isSubagentRequest(request: AnthropicRequest): boolean {
+  const systemText = getSystemText(request)
+  return SUBAGENT_PATTERNS.some((pattern) => systemText.includes(pattern))
+}
+
+/**
+ * Determine the X-Initiator header value based on request type.
+ * - 'user': Direct user prompt (charged ~$0.04)
+ * - 'agent': Tool result or subagent (free)
+ *
+ * Per GitHub docs: "Only the prompts you enter are billed—tool calls or
+ * background steps taken by the agent are not charged."
+ *
+ * Note: Sidecars are routed to free models (gpt-5-mini), so X-Initiator
+ * doesn't matter for them.
  */
 export function getXInitiator(request: AnthropicRequest): 'user' | 'agent' {
+  // Subagents are agent-initiated (not direct user prompts)
+  if (isSubagentRequest(request)) {
+    return 'agent'
+  }
+
   const lastMessage = request.messages[request.messages.length - 1]
-  return lastMessage?.role === 'user' ? 'user' : 'agent'
+  if (!lastMessage) return 'user'
+
+  // Tool results are sent with role='user' but are agent continuations (free)
+  if (lastMessage.role === 'user' && hasToolResult(lastMessage)) {
+    return 'agent'
+  }
+
+  return lastMessage.role === 'user' ? 'user' : 'agent'
 }
