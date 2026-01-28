@@ -1,5 +1,5 @@
 {
-  "name": "@claude-proxy/dashboard-spy",
+  "name": "@claude-pilot/dashboard-spy",
   "version": "1.0.0",
   "type": "module",
   "scripts": {

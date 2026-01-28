@@ -1,16 +1,16 @@
 {
-  "name": "claude-proxy",
+  "name": "claude-pilot",
   "version": "1.0.0",
   "private": true,
   "description": "Proxy Claude Code requests through GitHub Copilot",
   "scripts": {
     "dev": "turbo dev",
-    "dev:proxy": "turbo dev --filter=@claude-proxy/proxy",
-    "dev:dashboard": "turbo dev --filter=@claude-proxy/dashboard",
-    "dev:spy": "turbo dev --filter=@claude-proxy/proxy-spy --filter=@claude-proxy/dashboard-spy",
+    "dev:proxy": "turbo dev --filter=@claude-pilot/proxy",
+    "dev:dashboard": "turbo dev --filter=@claude-pilot/dashboard",
+    "dev:spy": "turbo dev --filter=@claude-pilot/proxy-spy --filter=@claude-pilot/dashboard-spy",
     "start": "turbo start",
-    "auth": "pnpm --filter @claude-proxy/proxy auth",
     "typecheck": "turbo typecheck",
+    "test": "./scripts/test-regression.sh",
     "logs:clear": "rm -f logs/requests.jsonl && echo 'Logs cleared'",
     "logs:clear:spy": "rm -f logs/spy.jsonl && echo 'Spy logs cleared'"
   },

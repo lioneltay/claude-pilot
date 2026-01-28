@@ -14,7 +14,7 @@ import {
   buildWebSearchNonStreamingResponse,
 } from './handlers/webSearchResponse.js'
 import { COPILOT_API_URL, COPILOT_HEADERS, DEFAULT_PORT } from './constants.js'
-import { log, summarizeMessages, getLogFilePath } from '@claude-proxy/shared/logger'
+import { log, summarizeMessages, getLogFilePath } from '@claude-pilot/shared/logger'
 import type { AnthropicRequest } from './types/anthropic.js'
 import type { OpenAIResponse } from './types/openai.js'
 

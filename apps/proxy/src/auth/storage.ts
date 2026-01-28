@@ -2,11 +2,11 @@
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { join, dirname } from 'node:path'
 import { getCopilotToken, type CopilotToken } from './github.js'
 
-const CONFIG_DIR = join(homedir(), '.config', 'claude-proxy')
-const AUTH_FILE = join(CONFIG_DIR, 'auth.json')
+const DEFAULT_CONFIG_DIR = join(homedir(), '.config', 'claude-pilot')
+const DEFAULT_AUTH_FILE = join(DEFAULT_CONFIG_DIR, 'auth.json')
 
 export type StoredCredentials = {
   githubToken: string
@@ -14,21 +14,21 @@ export type StoredCredentials = {
   copilotTokenExpiresAt: number
 }
 
-export async function loadCredentials(): Promise<StoredCredentials | null> {
+export async function loadCredentials(authFile = DEFAULT_AUTH_FILE): Promise<StoredCredentials | null> {
   try {
-    const data = await readFile(AUTH_FILE, 'utf-8')
+    const data = await readFile(authFile, 'utf-8')
     return JSON.parse(data) as StoredCredentials
   } catch {
     return null
   }
 }
 
-export async function saveCredentials(credentials: StoredCredentials): Promise<void> {
-  await mkdir(CONFIG_DIR, { recursive: true })
-  await writeFile(AUTH_FILE, JSON.stringify(credentials, null, 2))
+export async function saveCredentials(credentials: StoredCredentials, authFile = DEFAULT_AUTH_FILE): Promise<void> {
+  await mkdir(dirname(authFile), { recursive: true })
+  await writeFile(authFile, JSON.stringify(credentials, null, 2))
 }
 
-export async function getValidCopilotToken(credentials: StoredCredentials): Promise<string> {
+export async function getValidCopilotToken(credentials: StoredCredentials, authFile = DEFAULT_AUTH_FILE): Promise<string> {
   // Refresh if token expires in less than 5 minutes
   const refreshThreshold = 5 * 60 * 1000
   const now = Date.now()
@@ -43,7 +43,7 @@ export async function getValidCopilotToken(credentials: StoredCredentials): Prom
   // Update stored credentials
   credentials.copilotToken = newToken.token
   credentials.copilotTokenExpiresAt = newToken.expiresAt
-  await saveCredentials(credentials)
+  await saveCredentials(credentials, authFile)
 
   console.log('Copilot token refreshed')
   return newToken.token

@@ -2,14 +2,14 @@
 
 import Fastify from 'fastify'
 import { readFile, stat } from 'node:fs/promises'
-import { getLogFilePath } from '@claude-proxy/shared/logger'
+import { getLogFilePath } from '@claude-pilot/shared/logger'
 
 const PORT = parseInt(process.env.VIEWER_PORT || '8081', 10)
 
 const HTML = `<!DOCTYPE html>
 <html>
 <head>
-  <title>Claude Proxy Logs</title>
+  <title>Claude Pilot Logs</title>
   <style>
     * { box-sizing: border-box; }
     body {

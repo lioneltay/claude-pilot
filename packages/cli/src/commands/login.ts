@@ -1,16 +1,22 @@
-// CLI for initial authentication
+// Login command - GitHub device flow authentication
 
-import { initiateDeviceFlow, pollForAccessToken, getCopilotToken } from './github.js'
-import { saveCredentials, loadCredentials } from './storage.js'
+import {
+  initiateDeviceFlow,
+  pollForAccessToken,
+  getCopilotToken,
+  saveCredentials,
+  loadCredentials,
+} from '@claude-pilot/proxy'
+import { AUTH_FILE } from '../config.js'
 
-async function main() {
-  console.log('Claude Proxy - GitHub Copilot Authentication\n')
+export async function login(): Promise<void> {
+  console.log('Claude Pilot - GitHub Copilot Authentication\n')
 
   // Check if already authenticated
-  const existing = await loadCredentials()
+  const existing = await loadCredentials(AUTH_FILE)
   if (existing) {
     console.log('Existing credentials found.')
-    console.log('To re-authenticate, delete ~/.config/claude-proxy/auth.json\n')
+    console.log(`To re-authenticate, delete ${AUTH_FILE}\n`)
 
     // Test if token still works
     try {
@@ -18,7 +24,7 @@ async function main() {
       console.log('✓ Credentials are valid')
       console.log(`  Copilot token expires: ${new Date(token.expiresAt).toLocaleString()}`)
       return
-    } catch (error) {
+    } catch {
       console.log('✗ Credentials are invalid, re-authenticating...\n')
     }
   }
@@ -48,13 +54,8 @@ async function main() {
     githubToken,
     copilotToken: copilotToken.token,
     copilotTokenExpiresAt: copilotToken.expiresAt,
-  })
+  }, AUTH_FILE)
 
-  console.log('\n✓ Credentials saved to ~/.config/claude-proxy/auth.json')
-  console.log('\nYou can now run the proxy with: pnpm dev')
+  console.log(`\n✓ Credentials saved to ${AUTH_FILE}`)
+  console.log('\nYou can now start the proxy with: claude-pilot start')
 }
-
-main().catch((error) => {
-  console.error('Authentication failed:', error.message)
-  process.exit(1)
-})

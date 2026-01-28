@@ -1,5 +1,5 @@
 {
-  "name": "@claude-proxy/proxy-spy",
+  "name": "@claude-pilot/proxy-spy",
   "version": "1.0.0",
   "type": "module",
   "scripts": {

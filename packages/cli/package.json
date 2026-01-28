@@ -1,0 +1,47 @@
+{
+  "name": "@lioneltay/claude-pilot",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "CLI to run Claude Code through GitHub Copilot's API",
+  "bin": {
+    "claude-pilot": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "node esbuild.config.js",
+    "dev": "tsx src/index.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@claude-pilot/proxy": "workspace:*",
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.24.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "keywords": [
+    "claude",
+    "copilot",
+    "proxy",
+    "anthropic",
+    "github"
+  ],
+  "author": "Lionel Tay",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lioneltay/claude-pilot"
+  }
+}

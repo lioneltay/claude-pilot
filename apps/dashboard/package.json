@@ -1,5 +1,5 @@
 {
-  "name": "@claude-proxy/dashboard",
+  "name": "@claude-pilot/dashboard",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@claude-proxy/shared": "workspace:*",
+    "@claude-pilot/shared": "workspace:*",
     "fastify": "^5.7.2"
   },
   "devDependencies": {

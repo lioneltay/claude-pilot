@@ -1,5 +1,5 @@
 {
-  "name": "@claude-proxy/shared",
+  "name": "@claude-pilot/shared",
   "version": "1.0.0",
   "private": true,
   "type": "module",

@@ -1,16 +1,18 @@
 {
-  "name": "@claude-proxy/proxy",
+  "name": "@claude-pilot/proxy",
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/createServer.ts"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
-    "auth": "tsx src/auth/cli.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@claude-proxy/shared": "workspace:*",
+    "@claude-pilot/shared": "workspace:*",
     "fastify": "^5.7.2"
   },
   "devDependencies": {
