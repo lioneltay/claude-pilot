@@ -14,7 +14,7 @@ async function build() {
     target: 'node20',
     format: 'esm',
     sourcemap: false,
-    minify: false,
+    minify: true,
     // Inject require shim for CJS compatibility
     banner: {
       js: requireShim,
