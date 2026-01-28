@@ -35,6 +35,13 @@ export type LogEntry = {
   xInitiator?: string
   charged?: boolean
   isSuggestion?: boolean
+  // Web search info
+  webSearch?: boolean
+  query?: string
+  sourceCount?: number
+  // Suggestion blocking
+  blocked?: boolean
+  reason?: string
   // Messages summary
   messages?: Array<{
     role: string

@@ -29,6 +29,7 @@ The proxy:
 - Node.js 20+
 - pnpm
 - GitHub account with Copilot subscription (Individual, Business, or Enterprise)
+- [GitHub Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli) (for web search feature)
 
 ## Setup
 
@@ -107,18 +108,34 @@ The proxy automatically optimizes billing using the `X-Initiator` header:
 
 This means multi-step tool workflows (file reads, edits, command execution) only charge for the initial user request.
 
-## Limitations
+## Features
 
-Some Claude Code features require Anthropic's server-side infrastructure:
+| Feature           | Status      | Notes                                        |
+| ----------------- | ----------- | -------------------------------------------- |
+| Basic chat        | ✅ Works    | Full support                                 |
+| Streaming         | ✅ Works    | Full support                                 |
+| Tool use          | ✅ Works    | Full support                                 |
+| **WebSearch**     | ✅ Works    | Via Copilot CLI (free with gpt-4.1)          |
+| **WebFetch**      | ✅ Works    | Client-side, pass-through                    |
+| Extended thinking | ❌ N/A      | Not supported by Copilot                     |
 
-| Feature           | Status           | Notes                                       |
-| ----------------- | ---------------- | ------------------------------------------- |
-| Basic chat        | ✅ Works         | Full support                                |
-| Streaming         | ✅ Works         | Full support                                |
-| Tool use          | ✅ Works         | Full support                                |
-| **WebSearch**     | ❌ Not available | Server-side Anthropic feature               |
-| **WebFetch**      | ⚠️ Partial       | HTTP fetch works, domain validation may not |
-| Extended thinking | ❓ Untested      | May or may not work via Copilot             |
+### Web Search
+
+Web search is implemented via Copilot CLI subprocess. When Claude Code requests a web search:
+1. Proxy detects the request and spawns `copilot` CLI
+2. Copilot executes Bing search server-side
+3. Results returned in Anthropic-compatible format
+
+**Cost:** Free! Uses `gpt-4.1` model (0 premium requests).
+
+See [docs/WEB_SEARCH.md](docs/WEB_SEARCH.md) for details.
+
+## Documentation
+
+| Document | Description |
+| -------- | ----------- |
+| [docs/WEB_SEARCH.md](docs/WEB_SEARCH.md) | Web search implementation and configuration |
+| [docs/API_REFERENCE.md](docs/API_REFERENCE.md) | TypeScript types, payload shapes, debugging techniques |
 
 ## Scripts
 

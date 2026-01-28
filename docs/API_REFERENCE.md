@@ -4,6 +4,165 @@ Exact TypeScript types and payload shapes for Claude Code's web search implement
 
 ---
 
+## Debugging & Reverse-Engineering Methodology
+
+This section documents the techniques we used to discover how Claude Code's web search works.
+
+### Technique 1: Spy Proxy (Intercept Real API Traffic)
+
+We created a passthrough proxy that forwards requests to the real Anthropic API while logging everything.
+
+**Location:** `apps/proxy-spy/src/index.ts`
+
+**How it works:**
+```
+Claude Code → Spy Proxy (port 8082) → Anthropic API
+                    ↓
+              logs/spy.jsonl
+```
+
+**Usage:**
+```bash
+# Terminal 1: Start the spy proxy
+pnpm --filter proxy-spy dev
+
+# Terminal 2: Run Claude Code through the spy
+ANTHROPIC_BASE_URL=http://localhost:8082 claude
+```
+
+**What it logs:**
+- Full request body (system prompt, messages, tools)
+- Full response body (streaming SSE events captured and reassembled)
+- Headers, timing, status codes
+
+**Key discovery:** We found that web search sends a *separate* API request with a distinct system prompt pattern, not a normal tool_result flow.
+
+### Technique 2: Test Proxy with tmux
+
+Run our proxy and Claude Code side-by-side to test changes in real-time.
+
+**Setup:**
+```bash
+# Terminal 1: Run the proxy with hot reload
+pnpm dev
+
+# Terminal 2: Start Claude Code in a tmux session
+tmux new-session -d -s test 'ANTHROPIC_BASE_URL=http://localhost:8080 ANTHROPIC_AUTH_TOKEN=dummy claude'
+
+# Attach to watch Claude Code
+tmux attach -t test
+```
+
+**Workflow:**
+1. Make changes to proxy code
+2. tsx hot-reloads the proxy
+3. Test in the Claude Code tmux session
+4. Check `logs/requests.jsonl` for detailed request/response logs
+
+**Key tip:** When sending input to tmux programmatically, add a small delay before pressing Enter:
+```bash
+tmux send-keys -t test "search the web for bitcoin price" && sleep 0.1 && tmux send-keys -t test Enter
+```
+
+### Technique 3: Copilot CLI Debug Logging
+
+Enable verbose logging to see what Copilot CLI sends/receives.
+
+**Usage:**
+```bash
+copilot --log-level debug --allow-all -p "search the web for X"
+```
+
+**Log location:** `~/.copilot/logs/`
+
+**What we learned:**
+- `web_search` tool definition and schema
+- Response format from Copilot's server-side search
+- Tool execution timing (~10s for search)
+
+### Technique 4: Hardcoded Test Responses
+
+When debugging response format issues, hardcode an obvious response to verify the flow works.
+
+**Example:**
+```typescript
+// In proxy handler, temporarily return:
+const testResponse = {
+  summary: "BANANA MAN - This is a test response",
+  sources: [{ title: "Test Source", url: "https://example.com" }]
+}
+```
+
+**Why this helps:**
+- Confirms request detection is working
+- Isolates whether the issue is in search execution vs response formatting
+- Quick feedback loop without waiting for real searches
+
+### Technique 5: Response Format Comparison
+
+Capture real Anthropic responses and compare structure.
+
+**Process:**
+1. Run spy proxy with real Anthropic API key
+2. Trigger a web search in Claude Code
+3. Parse `logs/spy.jsonl` to extract SSE events
+4. Document exact block structure and types
+
+**Key discovery:** Claude Code counts `web_search_tool_result.content.length` to display "Did X searches" - we were missing this block initially and showed "Did 0 searches".
+
+### Debugging Checklist
+
+When something doesn't work:
+
+```
+□ Check proxy logs (logs/requests.jsonl)
+  - Is the request being detected correctly?
+  - What's the response we're sending?
+
+□ Check Claude Code output
+  - Any error messages?
+  - UI showing expected info? (e.g., "Did X searches")
+
+□ Compare with spy logs
+  - How does our response differ from real Anthropic?
+  - Missing fields? Wrong types?
+
+□ Test with hardcoded response
+  - Does a simple test response work?
+  - Isolate: detection vs execution vs formatting
+
+□ Check SSE format
+  - Events in correct order?
+  - Double newlines between events?
+  - Trailing newlines?
+```
+
+### Log File Locations
+
+| Log | Location | Content |
+|-----|----------|---------|
+| Proxy requests | `logs/requests.jsonl` | All proxied requests/responses |
+| Spy proxy | `logs/spy.jsonl` | Real Anthropic API traffic |
+| Copilot CLI | `~/.copilot/logs/` | Copilot debug logs |
+
+### Useful Commands
+
+```bash
+# Watch proxy logs in real-time
+tail -f logs/requests.jsonl | jq .
+
+# Parse spy logs for web search responses
+cat logs/spy.jsonl | jq 'select(.type == "response") | .rawResponse' -r
+
+# Find web search requests in logs
+grep "web search" logs/requests.jsonl | jq .
+
+# Kill processes on port 8080
+lsof -ti:8080 | xargs kill -9
+```
+
+---
+
 ## 1. Web Search Execution Request (Claude Code → API)
 
 When Claude Code needs to execute a web search, it sends a **separate API request** (not a normal tool flow).
