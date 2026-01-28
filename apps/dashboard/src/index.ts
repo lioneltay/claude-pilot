@@ -199,16 +199,11 @@ const HTML = `<!DOCTYPE html>
         html += '</div>';
 
         if (entry.type === 'request') {
-          // Check if this is a suggestion request
-          const isSuggestion = entry.messages && entry.messages.some(m =>
-            m.contentPreview && m.contentPreview.includes('[SUGGESTION MODE:')
-          );
-
           html += '<div class="entry-meta">';
           html += '<div class="meta-item"><div class="meta-label">Model</div><div class="meta-value">' + entry.model + '</div></div>';
           html += '<div class="meta-item"><div class="meta-label">Mapped To</div><div class="meta-value">' + entry.mappedModel + '</div></div>';
           html += '<div class="meta-item"><div class="meta-label">Messages</div><div class="meta-value">' + entry.messageCount + '</div></div>';
-          html += '<div class="meta-item"><div class="meta-label">Billing</div><div class="meta-value ' + (entry.charged ? 'charged' : 'free') + '">' + (entry.charged ? 'CHARGED' : 'FREE') + ' (' + entry.xInitiator + ')' + (isSuggestion ? '<span class="suggestion-badge">SUGGESTION</span>' : '') + '</div></div>';
+          html += '<div class="meta-item"><div class="meta-label">Billing</div><div class="meta-value ' + (entry.charged ? 'charged' : 'free') + '">' + (entry.charged ? 'CHARGED' : 'FREE') + ' (' + entry.xInitiator + ')' + (entry.isSuggestion ? '<span class="suggestion-badge">BLOCKED</span>' : '') + '</div></div>';
           html += '</div>';
 
           if (entry.toolNames && entry.toolNames.length > 0) {

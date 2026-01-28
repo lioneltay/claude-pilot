@@ -34,6 +34,7 @@ export type LogEntry = {
   toolNames?: string[]
   xInitiator?: string
   charged?: boolean
+  isSuggestion?: boolean
   // Messages summary
   messages?: Array<{
     role: string

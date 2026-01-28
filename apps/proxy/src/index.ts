@@ -66,6 +66,19 @@ async function main() {
       systemLength = systemText.length
     }
 
+    // Check if this is a suggestion request
+    let lastMessageContent = ''
+    if (typeof lastMessage?.content === 'string') {
+      lastMessageContent = lastMessage.content
+    } else if (Array.isArray(lastMessage?.content)) {
+      // Handle array of content blocks
+      lastMessageContent = lastMessage.content
+        .filter((block): block is { type: 'text'; text: string } => block.type === 'text')
+        .map((block) => block.text)
+        .join(' ')
+    }
+    const isSuggestion = lastMessageContent.includes('[SUGGESTION MODE:')
+
     // Log to file
     await log({
       timestamp: new Date().toISOString(),
@@ -78,10 +91,11 @@ async function main() {
       hasTools: !!anthropicRequest.tools?.length,
       toolNames: anthropicRequest.tools?.map((t) => t.name),
       xInitiator,
-      charged: xInitiator === 'user',
+      charged: isSuggestion ? false : xInitiator === 'user',
       messages: summarizeMessages(anthropicRequest.messages),
       systemPreview,
       systemLength,
+      isSuggestion,
       ...(LOG_FULL_REQUESTS && { fullRequest: anthropicRequest }),
     })
 
@@ -93,8 +107,72 @@ async function main() {
       messageCount: anthropicRequest.messages.length,
       stream: anthropicRequest.stream,
       hasTools: !!anthropicRequest.tools?.length,
+      isSuggestion,
     })
-    fastify.log.info({ msg: 'Billing', xInitiator, charged: xInitiator === 'user' })
+    fastify.log.info({ msg: 'Billing', xInitiator, charged: isSuggestion ? false : xInitiator === 'user' })
+
+    // Block suggestion requests - return empty response
+    if (isSuggestion) {
+      fastify.log.info({ msg: 'Blocking suggestion request - returning empty response' })
+
+      await log({
+        timestamp: new Date().toISOString(),
+        requestId,
+        type: 'response',
+        statusCode: 200,
+        responseTime: Date.now() - startTime,
+      })
+
+      if (anthropicRequest.stream) {
+        reply.header('Content-Type', 'text/event-stream')
+        reply.header('Cache-Control', 'no-cache')
+        reply.header('Connection', 'keep-alive')
+
+        // Return empty streaming response
+        const messageId = `msg_blocked_${requestId}`
+        const emptyStreamResponse = [
+          `event: message_start`,
+          `data: ${JSON.stringify({
+            type: 'message_start',
+            message: {
+              id: messageId,
+              type: 'message',
+              role: 'assistant',
+              content: [],
+              model: anthropicRequest.model,
+              stop_reason: null,
+              stop_sequence: null,
+              usage: { input_tokens: 0, output_tokens: 0 },
+            },
+          })}`,
+          ``,
+          `event: message_delta`,
+          `data: ${JSON.stringify({
+            type: 'message_delta',
+            delta: { stop_reason: 'end_turn', stop_sequence: null },
+            usage: { output_tokens: 0 },
+          })}`,
+          ``,
+          `event: message_stop`,
+          `data: ${JSON.stringify({ type: 'message_stop' })}`,
+          ``,
+        ].join('\n')
+
+        return reply.send(emptyStreamResponse)
+      }
+
+      // Non-streaming empty response
+      return {
+        id: `msg_blocked_${requestId}`,
+        type: 'message',
+        role: 'assistant',
+        content: [],
+        model: anthropicRequest.model,
+        stop_reason: 'end_turn',
+        stop_sequence: null,
+        usage: { input_tokens: 0, output_tokens: 0 },
+      }
+    }
 
     // Transform request
     const openaiRequest = transformRequest(anthropicRequest)
