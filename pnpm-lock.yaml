@@ -86,17 +86,16 @@ importers:
         version: 5.9.3
 
   packages/cli:
-    dependencies:
+    devDependencies:
       '@claude-pilot/proxy':
         specifier: workspace:*
         version: link:../../apps/proxy
-      commander:
-        specifier: ^12.1.0
-        version: 12.1.0
-    devDependencies:
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.7
+      commander:
+        specifier: ^12.1.0
+        version: 12.1.0
       esbuild:
         specifier: ^0.24.0
         version: 0.24.2
