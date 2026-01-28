@@ -89,6 +89,14 @@ This will:
 3. Enter the code to authorize
 4. Save credentials to `~/.config/claude-pilot/auth.json`
 
+### `claude-pilot logout`
+
+Clear credentials and stop the proxy.
+
+```bash
+claude-pilot logout
+```
+
 ### `claude-pilot start`
 
 Start the proxy server in the background.

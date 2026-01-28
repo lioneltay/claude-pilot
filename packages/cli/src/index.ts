@@ -3,6 +3,7 @@
 import { spawn } from 'node:child_process'
 import { Command } from 'commander'
 import { login } from './commands/login.js'
+import { logout } from './commands/logout.js'
 import { start } from './commands/start.js'
 import { stop } from './commands/stop.js'
 import { status } from './commands/status.js'
@@ -12,7 +13,7 @@ import { loadCredentials } from '@claude-pilot/proxy'
 import { DEFAULT_PORT, AUTH_FILE } from './config.js'
 
 // Our built-in commands
-const BUILTIN_COMMANDS = ['login', 'start', 'stop', 'status', 'dashboard', 'help']
+const BUILTIN_COMMANDS = ['login', 'logout', 'start', 'stop', 'status', 'dashboard', 'help']
 
 // Check if the first argument is one of our commands
 function isBuiltinCommand(args: string[]): boolean {
@@ -103,6 +104,18 @@ async function main() {
         await login()
       } catch (error) {
         console.error('Login failed:', error instanceof Error ? error.message : error)
+        process.exit(1)
+      }
+    })
+
+  program
+    .command('logout')
+    .description('Clear credentials and stop proxy')
+    .action(async () => {
+      try {
+        await logout()
+      } catch (error) {
+        console.error('Logout failed:', error instanceof Error ? error.message : error)
         process.exit(1)
       }
     })
