@@ -15,7 +15,7 @@ import {
   buildWebSearchStreamingResponse,
   buildWebSearchNonStreamingResponse,
 } from './handlers/webSearchResponse.js'
-import { COPILOT_API_URL, COPILOT_HEADERS } from './constants.js'
+import { COPILOT_API_URL, COPILOT_HEADERS, FREE_SUGGESTION_MODEL } from './constants.js'
 import type { AnthropicRequest } from './types/anthropic.js'
 import type { OpenAIResponse } from './types/openai.js'
 
@@ -278,9 +278,9 @@ export async function createProxyServer(options: ProxyServerOptions): Promise<Pr
       }
     }
 
-    // Block suggestion requests to save costs
+    // Route suggestion requests to free model (gpt-4.1)
     if (isSuggestionRequest(anthropicRequest)) {
-      return handleSuggestionRequest(anthropicRequest, requestId, startTime, reply, fastify.log, log)
+      return handleSuggestionRequest(anthropicRequest, credentials, requestId, startTime, reply, fastify.log, log, authFile)
     }
 
     // Normal request - forward to Copilot
@@ -369,16 +369,61 @@ async function handleWebSearchRequest(
   }
 }
 
-// Handle suggestion requests (blocked to save costs)
+// Handle suggestion requests - forward to free model (gpt-4.1)
 async function handleSuggestionRequest(
   request: AnthropicRequest,
+  credentials: StoredCredentials,
   requestId: string,
   startTime: number,
-  reply: { header: (k: string, v: string) => void; send: (d: unknown) => unknown },
-  logger: { info: (obj: object) => void },
-  log: (entry: Record<string, unknown>) => Promise<void>
+  reply: { header: (k: string, v: string) => void; send: (d: unknown) => unknown; code: (c: number) => void },
+  logger: { info: (obj: object) => void; error: (obj: object) => void },
+  log: (entry: Record<string, unknown>) => Promise<void>,
+  authFile?: string
 ) {
-  logger.info({ msg: 'Blocking suggestion request - returning empty response' })
+  logger.info({ msg: 'Suggestion request - routing to free model', model: FREE_SUGGESTION_MODEL })
+
+  await log({
+    timestamp: new Date().toISOString(),
+    requestId,
+    type: 'request',
+    suggestion: true,
+    model: request.model,
+    routedModel: FREE_SUGGESTION_MODEL,
+  })
+
+  const openaiRequest = transformRequest(request)
+  // Override model to free model
+  openaiRequest.model = FREE_SUGGESTION_MODEL
+
+  const copilotToken = await getValidCopilotToken(credentials, authFile)
+
+  const response = await fetch(`${COPILOT_API_URL}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      ...COPILOT_HEADERS,
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${copilotToken}`,
+      'X-Initiator': 'agent', // Suggestions are always free
+    },
+    body: JSON.stringify(openaiRequest),
+  })
+
+  if (!response.ok) {
+    return handleCopilotError(response, requestId, startTime, reply, logger, log)
+  }
+
+  if (request.stream) {
+    reply.header('Content-Type', 'text/event-stream')
+    reply.header('Cache-Control', 'no-cache')
+    reply.header('Connection', 'keep-alive')
+
+    const transformed = response.body!.pipeThrough(createStreamTransformer(FREE_SUGGESTION_MODEL))
+    return reply.send(transformed)
+  }
+
+  // Non-streaming
+  const data = (await response.json()) as OpenAIResponse
+  const anthropicResponse = transformResponse(data)
 
   await log({
     timestamp: new Date().toISOString(),
@@ -386,18 +431,10 @@ async function handleSuggestionRequest(
     type: 'response',
     statusCode: 200,
     responseTime: Date.now() - startTime,
-    blocked: true,
-    reason: 'suggestion',
+    suggestion: true,
   })
 
-  const messageId = `msg_blocked_${requestId}`
-
-  if (request.stream) {
-    setStreamingHeaders(reply)
-    return reply.send(buildEmptyStreamingResponse(messageId, request.model))
-  }
-
-  return buildEmptyNonStreamingResponse(messageId, request.model)
+  return anthropicResponse
 }
 
 // Handle normal requests - forward to Copilot

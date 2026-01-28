@@ -48,6 +48,15 @@ claude-pilot login
 claude-pilot
 ```
 
+## Features
+
+- **Web Search** - Works via Copilot CLI at no extra cost
+- **Cost Optimization** - Tool continuations are free, only new user messages are charged (~$0.04)
+- **Free Suggestions** - Autocomplete requests routed to GPT-4.1 (free model)
+- **Auto Token Refresh** - Copilot tokens refresh automatically before expiry
+- **Dashboard** - Web-based log viewer at `http://localhost:51080/`
+- **Zero Config** - Proxy auto-starts and finds an available port
+
 ## Commands
 
 ### `claude-pilot`

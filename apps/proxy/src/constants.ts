@@ -16,5 +16,8 @@ export const WEB_SEARCH_MESSAGE_PATTERN = /Perform a web search for the query:\s
 // Suggestion detection
 export const SUGGESTION_MODE_PATTERN = '[SUGGESTION MODE:'
 
+// Free model for suggestions (0 premium multiplier)
+export const FREE_SUGGESTION_MODEL = 'gpt-4.1'
+
 // Default configuration
 export const DEFAULT_PORT = 8080
