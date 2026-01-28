@@ -7,7 +7,8 @@
     "claude-pilot": "./dist/cli.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "build": "node esbuild.config.js",
