@@ -6,6 +6,7 @@ import type {
   AnthropicContentBlock,
   AnthropicTool,
 } from '../types/anthropic.js'
+
 import type {
   OpenAIRequest,
   OpenAIMessage,
@@ -13,6 +14,28 @@ import type {
   OpenAIMessageContent,
   OpenAIToolCall,
 } from '../types/openai.js'
+
+// Web search tool definition (matches Anthropic's format)
+export const WEB_SEARCH_TOOL: AnthropicTool = {
+  name: 'web_search',
+  description: `Search the web for current information. Use this when you need up-to-date information about:
+- Recent events, news, or developments
+- Current prices, statistics, or data
+- Information that may have changed since your knowledge cutoff
+- Topics you're uncertain about and want to verify
+
+Returns a summary with source citations.`,
+  input_schema: {
+    type: 'object',
+    properties: {
+      query: {
+        type: 'string',
+        description: 'The search query - be specific and descriptive for best results',
+      },
+    },
+    required: ['query'],
+  },
+}
 
 // Model mapping: Anthropic model IDs → Copilot model IDs
 // Copilot supports: claude-haiku-4.5, claude-sonnet-4.5, claude-opus-4

@@ -294,8 +294,54 @@ The tool appears to be:
 ### Options for Our Proxy
 
 1. **Implement our own web search** using Tavily/SerpAPI/Bing
-2. **Use a different approach** - prompt Copilot CLI via subprocess (hacky)
+2. ✅ **Use Copilot CLI via subprocess** - IMPLEMENTED AND WORKING
 3. **Wait for official API** - Copilot may expose this in the future
+
+---
+
+## Final Solution: Copilot CLI Subprocess ✅
+
+We successfully implemented Option 2. Here's how:
+
+### Approach
+
+1. **Spawn Copilot CLI** with a prompt that triggers web_search
+2. **Parse the JSON output** to extract summary and sources
+3. **Return Anthropic-compatible response** matching their web_search format
+
+### The Prompt
+
+```
+Execute web_search for: "{query}"
+
+Return JSON only:
+{
+  "query": <the search query>,
+  "summary": <full text from tool response>,
+  "sources": [{"title": ..., "url": ...}]
+}
+```
+
+### Key Configuration
+
+```bash
+copilot --allow-all --model gpt-4.1 -p "{prompt}"
+```
+
+- `--model gpt-4.1`: **0 premium requests** (free!)
+- Same search quality as expensive models
+- ~30-40 second search time
+
+### Response Format
+
+We match Anthropic's format with:
+- `server_tool_use` block
+- `web_search_tool_result` block with sources array
+- `text` block with summary
+
+This makes Claude Code display "Did X searches" correctly.
+
+See `WEB_SEARCH_IMPLEMENTATION.md` for full technical details.
 
 ---
 
