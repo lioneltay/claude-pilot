@@ -3,7 +3,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join, dirname } from 'node:path'
-import { getCopilotToken, type CopilotToken } from './github.js'
+import { getCopilotToken } from './github.js'
 
 const DEFAULT_CONFIG_DIR = join(homedir(), '.config', 'claude-pilot')
 const DEFAULT_AUTH_FILE = join(DEFAULT_CONFIG_DIR, 'auth.json')

@@ -2,7 +2,7 @@
 
 import { unlink } from 'node:fs/promises'
 import { AUTH_FILE } from '../config.js'
-import { isDaemonRunning, clearDaemonState } from '../daemon.js'
+import { isDaemonRunning } from '../daemon.js'
 import { stop } from './stop.js'
 
 export async function logout(): Promise<void> {

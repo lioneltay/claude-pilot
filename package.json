@@ -9,6 +9,8 @@
     "dev:dashboard": "turbo dev --filter=@claude-pilot/dashboard",
     "dev:spy": "turbo dev --filter=@claude-pilot/proxy-spy --filter=@claude-pilot/dashboard-spy",
     "start": "turbo start",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "typecheck": "turbo typecheck",
     "test": "./scripts/test-regression.sh",
     "logs:clear": "rm -f logs/requests.jsonl && echo 'Logs cleared'",
@@ -17,7 +19,12 @@
     "release:cli": "pnpm --filter @lioneltay/claude-pilot exec npm version patch && git add packages/cli/package.json packages/cli/package-lock.json && git commit -m 'Bump CLI version' && git push && pnpm publish:cli"
   },
   "devDependencies": {
-    "turbo": "^2.5.4"
+    "@eslint/js": "^9.39.2",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
+    "eslint": "^9.39.2",
+    "turbo": "^2.5.4",
+    "typescript-eslint": "^8.54.0"
   },
   "packageManager": "pnpm@10.27.0"
 }

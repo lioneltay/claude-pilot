@@ -58,9 +58,6 @@ async function main() {
     const path = request.url
     const method = request.method
 
-    // Get the auth token from the request
-    const authHeader = request.headers['authorization'] || request.headers['x-api-key']
-
     // Log request
     const requestBody = request.body as Record<string, unknown> | undefined
     await logEntry({

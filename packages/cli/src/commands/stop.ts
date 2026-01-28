@@ -31,7 +31,7 @@ export async function stop(): Promise<void> {
 
     await deleteDaemonState()
     console.log('✓ Proxy stopped')
-  } catch (error) {
+  } catch {
     // Process might have already exited
     await deleteDaemonState()
     console.log('✓ Proxy stopped (was already exiting)')
