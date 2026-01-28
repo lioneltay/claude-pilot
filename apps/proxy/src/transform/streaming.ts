@@ -42,50 +42,34 @@ export function createStreamTransformer(model: string) {
 
   let sentMessageStart = false
   let sentContentBlockStart = false
+  let sentMessageStop = false
   let currentContentType: 'text' | 'tool_use' | null = null
+  const decoder = new TextDecoder()
+  const encoder = new TextEncoder()
+  let buffer = ''
 
-  return new TransformStream<string, string>({
+  const emit = (controller: TransformStreamDefaultController<Uint8Array>, data: unknown) => {
+    controller.enqueue(encoder.encode(formatSSE(data)))
+  }
+
+  return new TransformStream<Uint8Array, Uint8Array>({
     transform(chunk, controller) {
-      // Parse SSE data
-      const lines = chunk.split('\n')
+      // Decode and buffer the chunk
+      buffer += decoder.decode(chunk, { stream: true })
+
+      // Parse SSE data - process complete lines only
+      const lines = buffer.split('\n')
+      // Keep the last incomplete line in the buffer
+      buffer = lines.pop() || ''
 
       for (const line of lines) {
         if (!line.startsWith('data: ')) continue
 
         const data = line.slice(6).trim()
         if (data === '[DONE]') {
-          // Send content_block_stop if we had content
-          if (sentContentBlockStart) {
-            controller.enqueue(
-              formatSSE({
-                type: 'content_block_stop',
-                index: state.contentBlockIndex,
-              })
-            )
-          }
-
-          // Send any pending tool calls
-          for (const [index, toolCall] of state.toolCalls) {
-            // Tool call was already streamed, just close it
-          }
-
-          // Send message_delta with final stop_reason
-          controller.enqueue(
-            formatSSE({
-              type: 'message_delta',
-              delta: {
-                stop_reason: 'end_turn',
-                stop_sequence: null,
-              },
-              usage: {
-                output_tokens: state.outputTokens,
-              },
-            })
-          )
-
-          // Send message_stop
-          controller.enqueue(formatSSE({ type: 'message_stop' }))
-          return
+          // [DONE] means stream is complete - but we already handled finish_reason
+          // Don't emit duplicate events
+          continue
         }
 
         let openaiChunk: OpenAIStreamChunk
@@ -100,7 +84,7 @@ export function createStreamTransformer(model: string) {
           if (openaiChunk.usage?.prompt_tokens) {
             state.inputTokens = openaiChunk.usage.prompt_tokens
           }
-          controller.enqueue(formatSSE(createMessageStartEvent(state)))
+          emit(controller, createMessageStartEvent(state))
           sentMessageStart = true
         }
 
@@ -114,33 +98,27 @@ export function createStreamTransformer(model: string) {
           if (!sentContentBlockStart || currentContentType !== 'text') {
             // Start new text block
             if (sentContentBlockStart) {
-              controller.enqueue(
-                formatSSE({
-                  type: 'content_block_stop',
-                  index: state.contentBlockIndex,
-                })
-              )
+              emit(controller, {
+                type: 'content_block_stop',
+                index: state.contentBlockIndex,
+              })
               state.contentBlockIndex++
             }
 
-            controller.enqueue(
-              formatSSE({
-                type: 'content_block_start',
-                index: state.contentBlockIndex,
-                content_block: { type: 'text', text: '' },
-              })
-            )
+            emit(controller, {
+              type: 'content_block_start',
+              index: state.contentBlockIndex,
+              content_block: { type: 'text', text: '' },
+            })
             sentContentBlockStart = true
             currentContentType = 'text'
           }
 
-          controller.enqueue(
-            formatSSE({
-              type: 'content_block_delta',
-              index: state.contentBlockIndex,
-              delta: { type: 'text_delta', text: delta.content },
-            })
-          )
+          emit(controller, {
+            type: 'content_block_delta',
+            index: state.contentBlockIndex,
+            delta: { type: 'text_delta', text: delta.content },
+          })
         }
 
         // Handle tool calls
@@ -151,12 +129,10 @@ export function createStreamTransformer(model: string) {
             if (!existingCall && toolCall.id && toolCall.function?.name) {
               // New tool call - close any existing content block
               if (sentContentBlockStart) {
-                controller.enqueue(
-                  formatSSE({
-                    type: 'content_block_stop',
-                    index: state.contentBlockIndex,
-                  })
-                )
+                emit(controller, {
+                  type: 'content_block_stop',
+                  index: state.contentBlockIndex,
+                })
                 state.contentBlockIndex++
               }
 
@@ -167,18 +143,16 @@ export function createStreamTransformer(model: string) {
                 arguments: '',
               })
 
-              controller.enqueue(
-                formatSSE({
-                  type: 'content_block_start',
-                  index: state.contentBlockIndex,
-                  content_block: {
-                    type: 'tool_use',
-                    id: toolCall.id,
-                    name: toolCall.function.name,
-                    input: {},
-                  },
-                })
-              )
+              emit(controller, {
+                type: 'content_block_start',
+                index: state.contentBlockIndex,
+                content_block: {
+                  type: 'tool_use',
+                  id: toolCall.id,
+                  name: toolCall.function.name,
+                  input: {},
+                },
+              })
               sentContentBlockStart = true
               currentContentType = 'tool_use'
             }
@@ -189,49 +163,44 @@ export function createStreamTransformer(model: string) {
               if (call) {
                 call.arguments += toolCall.function.arguments
 
-                controller.enqueue(
-                  formatSSE({
-                    type: 'content_block_delta',
-                    index: state.contentBlockIndex,
-                    delta: {
-                      type: 'input_json_delta',
-                      partial_json: toolCall.function.arguments,
-                    },
-                  })
-                )
+                emit(controller, {
+                  type: 'content_block_delta',
+                  index: state.contentBlockIndex,
+                  delta: {
+                    type: 'input_json_delta',
+                    partial_json: toolCall.function.arguments,
+                  },
+                })
               }
             }
           }
         }
 
         // Handle finish_reason
-        if (choice.finish_reason) {
+        if (choice.finish_reason && !sentMessageStop) {
           // Close current content block
           if (sentContentBlockStart) {
-            controller.enqueue(
-              formatSSE({
-                type: 'content_block_stop',
-                index: state.contentBlockIndex,
-              })
-            )
+            emit(controller, {
+              type: 'content_block_stop',
+              index: state.contentBlockIndex,
+            })
           }
 
           const stopReason = mapFinishReason(choice.finish_reason)
 
-          controller.enqueue(
-            formatSSE({
-              type: 'message_delta',
-              delta: {
-                stop_reason: stopReason,
-                stop_sequence: null,
-              },
-              usage: {
-                output_tokens: openaiChunk.usage?.completion_tokens || state.outputTokens,
-              },
-            })
-          )
+          emit(controller, {
+            type: 'message_delta',
+            delta: {
+              stop_reason: stopReason,
+              stop_sequence: null,
+            },
+            usage: {
+              output_tokens: openaiChunk.usage?.completion_tokens || state.outputTokens,
+            },
+          })
 
-          controller.enqueue(formatSSE({ type: 'message_stop' }))
+          emit(controller, { type: 'message_stop' })
+          sentMessageStop = true
         }
 
         // Track usage

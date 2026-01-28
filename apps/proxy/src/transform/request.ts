@@ -15,20 +15,23 @@ import type {
 } from '../types/openai.js'
 
 // Model mapping: Anthropic model IDs → Copilot model IDs
-const MODEL_MAP: Record<string, string> = {
-  // Claude 4 models
-  'claude-sonnet-4-20250514': 'claude-sonnet-4.5',
-  'claude-opus-4-20250514': 'claude-opus-4',
-  // Claude 3.5 models
-  'claude-3-5-sonnet-20241022': 'claude-sonnet-4.5',
-  'claude-3-5-haiku-20241022': 'claude-haiku-4.5',
-  // Shortcuts
-  'claude-sonnet-4': 'claude-sonnet-4.5',
-  'claude-opus-4': 'claude-opus-4',
-}
-
+// Copilot supports: claude-haiku-4.5, claude-sonnet-4.5, claude-opus-4
 export function mapModel(anthropicModel: string): string {
-  return MODEL_MAP[anthropicModel] || anthropicModel
+  const model = anthropicModel.toLowerCase()
+
+  // Match by model family
+  if (model.includes('opus')) {
+    return 'claude-opus-4'
+  }
+  if (model.includes('sonnet')) {
+    return 'claude-sonnet-4.5'
+  }
+  if (model.includes('haiku')) {
+    return 'claude-haiku-4.5'
+  }
+
+  // Fallback to original (will likely fail, but lets us see the error)
+  return anthropicModel
 }
 
 function transformContentToString(content: string | AnthropicContentBlock[]): string {

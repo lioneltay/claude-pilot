@@ -17,6 +17,7 @@ A local proxy that routes [Claude Code](https://github.com/anthropics/claude-cod
 ```
 
 The proxy:
+
 1. Receives Anthropic Messages API requests from Claude Code
 2. Translates them to OpenAI Chat Completions format
 3. Adds billing optimization headers (`X-Initiator: agent` for free requests)
@@ -44,6 +45,7 @@ pnpm auth
 ```
 
 This will:
+
 - Open a GitHub device flow authentication
 - Display a URL and code - visit the URL and enter the code
 - Save credentials to `~/.config/claude-proxy/auth.json`
@@ -87,21 +89,21 @@ claude
 
 The proxy maps Claude Code model requests to Copilot's available models:
 
-| Claude Code Model | Copilot Model |
-|-------------------|---------------|
-| `claude-sonnet-4-*` | `claude-sonnet-4.5` |
-| `claude-opus-4-*` | `claude-opus-4` |
+| Claude Code Model     | Copilot Model       |
+| --------------------- | ------------------- |
+| `claude-sonnet-4-*`   | `claude-sonnet-4.5` |
+| `claude-opus-4-*`     | `claude-opus-4`     |
 | `claude-3-5-sonnet-*` | `claude-sonnet-4.5` |
-| `claude-3-5-haiku-*` | `claude-haiku-4.5` |
+| `claude-3-5-haiku-*`  | `claude-haiku-4.5`  |
 
 ## Billing Optimization
 
 The proxy automatically optimizes billing using the `X-Initiator` header:
 
-| Scenario | Header | Cost |
-|----------|--------|------|
-| New user message | `X-Initiator: user` | **Charged** (~$0.04) |
-| Agent tool continuation | `X-Initiator: agent` | **Free** |
+| Scenario                | Header               | Cost                 |
+| ----------------------- | -------------------- | -------------------- |
+| New user message        | `X-Initiator: user`  | **Charged** (~$0.04) |
+| Agent tool continuation | `X-Initiator: agent` | **Free**             |
 
 This means multi-step tool workflows (file reads, edits, command execution) only charge for the initial user request.
 
@@ -109,22 +111,22 @@ This means multi-step tool workflows (file reads, edits, command execution) only
 
 Some Claude Code features require Anthropic's server-side infrastructure:
 
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Basic chat | ✅ Works | Full support |
-| Streaming | ✅ Works | Full support |
-| Tool use | ✅ Works | Full support |
-| **WebSearch** | ❌ Not available | Server-side Anthropic feature |
-| **WebFetch** | ⚠️ Partial | HTTP fetch works, domain validation may not |
-| Extended thinking | ❓ Untested | May or may not work via Copilot |
+| Feature           | Status           | Notes                                       |
+| ----------------- | ---------------- | ------------------------------------------- |
+| Basic chat        | ✅ Works         | Full support                                |
+| Streaming         | ✅ Works         | Full support                                |
+| Tool use          | ✅ Works         | Full support                                |
+| **WebSearch**     | ❌ Not available | Server-side Anthropic feature               |
+| **WebFetch**      | ⚠️ Partial       | HTTP fetch works, domain validation may not |
+| Extended thinking | ❓ Untested      | May or may not work via Copilot             |
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `pnpm auth` | Authenticate with GitHub Copilot |
-| `pnpm dev` | Start proxy with hot reload |
-| `pnpm start` | Start proxy |
+| Command      | Description                      |
+| ------------ | -------------------------------- |
+| `pnpm auth`  | Authenticate with GitHub Copilot |
+| `pnpm dev`   | Start proxy with hot reload      |
+| `pnpm start` | Start proxy                      |
 
 ## Troubleshooting
 
