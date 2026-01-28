@@ -14,12 +14,10 @@
     "dev": "tsx src/index.ts",
     "prepublishOnly": "npm run build"
   },
-  "dependencies": {
-    "@claude-pilot/proxy": "workspace:*",
-    "commander": "^12.1.0"
-  },
   "devDependencies": {
+    "@claude-pilot/proxy": "workspace:*",
     "@types/node": "^22.0.0",
+    "commander": "^12.1.0",
     "esbuild": "^0.24.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
