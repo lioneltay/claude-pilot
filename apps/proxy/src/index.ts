@@ -228,23 +228,32 @@ async function main() {
       reply.header('Cache-Control', 'no-cache')
       reply.header('Connection', 'keep-alive')
 
-      // Log streaming response start
-      await log({
-        timestamp: new Date().toISOString(),
-        requestId,
-        type: 'response',
-        statusCode: 200,
-        responseTime: Date.now() - startTime,
+      // Capture raw Copilot response for logging
+      const rawChunks: string[] = []
+      const captureStream = new TransformStream({
+        transform(chunk, controller) {
+          const text = new TextDecoder().decode(chunk)
+          rawChunks.push(text)
+          controller.enqueue(chunk)
+        },
+        async flush() {
+          // Log the complete raw response when stream ends
+          const rawResponse = rawChunks.join('')
+          await log({
+            timestamp: new Date().toISOString(),
+            requestId,
+            type: 'response',
+            statusCode: 200,
+            responseTime: Date.now() - startTime,
+            rawCopilotResponse: LOG_FULL_REQUESTS ? rawResponse : rawResponse.slice(0, 2000),
+          })
+        },
       })
 
-      // Pipe: Copilot response → transformer → client
-      const transformed = response.body!.pipeThrough(
-        new TransformStream({
-          transform(chunk, controller) {
-            controller.enqueue(chunk)
-          },
-        })
-      ).pipeThrough(createStreamTransformer(openaiRequest.model))
+      // Pipe: Copilot response → capture → transformer → client
+      const transformed = response.body!
+        .pipeThrough(captureStream)
+        .pipeThrough(createStreamTransformer(openaiRequest.model))
 
       return reply.send(transformed)
     }

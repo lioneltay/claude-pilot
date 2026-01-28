@@ -241,6 +241,10 @@ const HTML = `<!DOCTYPE html>
           html += '<div class="meta-item"><div class="meta-label">Status</div><div class="meta-value">' + entry.statusCode + '</div></div>';
           html += '<div class="meta-item"><div class="meta-label">Response Time</div><div class="meta-value">' + entry.responseTime + 'ms</div></div>';
           html += '</div>';
+          if (entry.rawCopilotResponse) {
+            html += '<div style="margin-top: 10px"><div class="meta-label">Raw Copilot Response (' + entry.rawCopilotResponse.length + ' chars)</div>';
+            html += '<div class="system-preview" style="max-height: 200px;">' + escapeHtml(entry.rawCopilotResponse) + '</div></div>';
+          }
         } else if (entry.type === 'error') {
           html += '<div class="entry-meta">';
           html += '<div class="meta-item"><div class="meta-label">Status</div><div class="meta-value">' + entry.statusCode + '</div></div>';

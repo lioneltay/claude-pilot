@@ -50,6 +50,7 @@ export type LogEntry = {
   statusCode?: number
   responseTime?: number
   error?: string
+  rawCopilotResponse?: string
   // Full data for debugging (optional, can be large)
   fullRequest?: unknown
   fullResponse?: unknown
