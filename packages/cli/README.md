@@ -24,11 +24,7 @@ copilot --version
 Install the Claude Code CLI:
 
 ```bash
-# macOS / Linux
 curl -fsSL https://claude.ai/install.sh | bash
-
-# Windows (PowerShell)
-irm https://claude.ai/install.ps1 | iex
 
 # Verify installation
 claude --version
