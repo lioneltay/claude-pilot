@@ -11,6 +11,26 @@ import { dashboard } from './commands/dashboard.js'
 import { isDaemonRunning } from './daemon.js'
 import { loadCredentials } from '@claude-pilot/proxy'
 import { DEFAULT_PORT, AUTH_FILE } from './config.js'
+import { checkAndUpdate } from './utils/update.js'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
+
+// Read version from package.json
+function getVersion(): string {
+  try {
+    const __filename = fileURLToPath(import.meta.url)
+    const __dirname = dirname(__filename)
+    // In dist/, package.json is two levels up
+    const pkgPath = join(__dirname, '..', 'package.json')
+    const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'))
+    return pkg.version || '0.0.0'
+  } catch {
+    return '0.0.0'
+  }
+}
+
+const VERSION = getVersion()
 
 // Our built-in commands
 const BUILTIN_COMMANDS = ['login', 'logout', 'start', 'stop', 'status', 'dashboard', 'help']
@@ -80,6 +100,9 @@ function runClaudeWithEnv(args: string[], port: number): void {
 
 // Main entry point
 async function main() {
+  // Check for updates on launch
+  await checkAndUpdate()
+
   const args = process.argv.slice(2)
 
   // If no args or first arg is not a builtin command, run claude
@@ -94,7 +117,7 @@ async function main() {
   program
     .name('claude-pilot')
     .description('Run Claude Code through GitHub Copilot API')
-    .version('0.1.0')
+    .version(VERSION)
 
   program
     .command('login')
