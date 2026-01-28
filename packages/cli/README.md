@@ -13,12 +13,10 @@ You need an active GitHub Copilot subscription (Individual, Business, or Enterpr
 Install the GitHub Copilot CLI:
 
 ```bash
-# macOS (Homebrew)
-brew install gh
-gh extension install github/gh-copilot
+npm install -g @github/copilot
 
 # Verify installation
-gh copilot --version
+copilot --version
 ```
 
 ### 3. Claude Code
@@ -26,11 +24,17 @@ gh copilot --version
 Install the Claude Code CLI:
 
 ```bash
-npm install -g @anthropic-ai/claude-code
+# macOS / Linux
+curl -fsSL https://claude.ai/install.sh | bash
+
+# Windows (PowerShell)
+irm https://claude.ai/install.ps1 | iex
 
 # Verify installation
 claude --version
 ```
+
+See [Claude Code setup docs](https://code.claude.com/docs/en/setup) for more details.
 
 ## Installation
 
@@ -142,7 +146,7 @@ This allows Claude Code to work with your existing GitHub Copilot subscription.
 Make sure the Copilot CLI is installed and in your PATH:
 
 ```bash
-gh copilot --version
+copilot --version
 ```
 
 If not installed, see [Prerequisites](#2-copilot-cli).
