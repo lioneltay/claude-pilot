@@ -8,11 +8,10 @@ import { createStreamTransformer } from './transform/streaming.js'
 import { executeWebSearch, formatAsToolResult } from './services/webSearch.js'
 import { isCopilotCLIAvailable } from './utils/validation.js'
 import { detectWebSearchRequest, isSuggestionRequest, getXInitiator, getSystemText } from './utils/detection.js'
-import { buildEmptyStreamingResponse } from './utils/sse.js'
+import { buildEmptyStreamingResponse, buildEmptyNonStreamingResponse, setStreamingHeaders } from './utils/sse.js'
 import {
   buildWebSearchStreamingResponse,
   buildWebSearchNonStreamingResponse,
-  buildEmptyNonStreamingResponse,
 } from './handlers/webSearchResponse.js'
 import { COPILOT_API_URL, COPILOT_HEADERS, DEFAULT_PORT } from './constants.js'
 import { log, summarizeMessages, getLogFilePath } from '@claude-proxy/shared/logger'
@@ -154,9 +153,7 @@ async function handleWebSearchRequest(
     const messageId = `msg_search_${requestId}`
 
     if (request.stream) {
-      reply.header('Content-Type', 'text/event-stream')
-      reply.header('Cache-Control', 'no-cache')
-      reply.header('Connection', 'keep-alive')
+      setStreamingHeaders(reply)
 
       const response = buildWebSearchStreamingResponse(
         messageId,
@@ -180,9 +177,7 @@ async function handleWebSearchRequest(
     // Return empty response on error
     const messageId = `msg_error_${requestId}`
     if (request.stream) {
-      reply.header('Content-Type', 'text/event-stream')
-      reply.header('Cache-Control', 'no-cache')
-      reply.header('Connection', 'keep-alive')
+      setStreamingHeaders(reply)
       return reply.send(buildEmptyStreamingResponse(messageId, request.model))
     }
     return buildEmptyNonStreamingResponse(messageId, request.model)

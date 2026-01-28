@@ -1,6 +1,7 @@
 // Transform OpenAI streaming chunks → Anthropic streaming events
 
 import type { OpenAIStreamChunk } from '../types/openai.js'
+import { formatSSEEvent } from '../utils/sse.js'
 
 type StreamState = {
   messageId: string
@@ -49,7 +50,7 @@ export function createStreamTransformer(model: string) {
   let buffer = ''
 
   const emit = (controller: TransformStreamDefaultController<Uint8Array>, data: unknown) => {
-    controller.enqueue(encoder.encode(formatSSE(data)))
+    controller.enqueue(encoder.encode(formatSSEEvent(data as { type: string })))
   }
 
   return new TransformStream<Uint8Array, Uint8Array>({
@@ -210,10 +211,6 @@ export function createStreamTransformer(model: string) {
       }
     },
   })
-}
-
-function formatSSE(data: unknown): string {
-  return `event: ${(data as { type: string }).type}\ndata: ${JSON.stringify(data)}\n\n`
 }
 
 function mapFinishReason(reason: string | null): string {

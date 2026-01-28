@@ -115,3 +115,33 @@ export function buildEmptyStreamingResponse(
   ]
   return buildSSEStream(events)
 }
+
+/**
+ * Build an empty non-streaming response (for blocked requests)
+ */
+export function buildEmptyNonStreamingResponse(
+  messageId: string,
+  model: string
+): object {
+  return {
+    id: messageId,
+    type: 'message',
+    role: 'assistant',
+    content: [],
+    model,
+    stop_reason: 'end_turn',
+    stop_sequence: null,
+    usage: { input_tokens: 0, output_tokens: 0 },
+  }
+}
+
+/**
+ * Set standard SSE headers on a reply object
+ */
+export function setStreamingHeaders(
+  reply: { header: (k: string, v: string) => void }
+): void {
+  reply.header('Content-Type', 'text/event-stream')
+  reply.header('Cache-Control', 'no-cache')
+  reply.header('Connection', 'keep-alive')
+}

@@ -134,21 +134,4 @@ export function buildWebSearchNonStreamingResponse(
   }
 }
 
-/**
- * Build an empty non-streaming response (for blocked requests)
- */
-export function buildEmptyNonStreamingResponse(
-  messageId: string,
-  model: string
-): object {
-  return {
-    id: messageId,
-    type: 'message',
-    role: 'assistant',
-    content: [],
-    model,
-    stop_reason: 'end_turn',
-    stop_sequence: null,
-    usage: { input_tokens: 0, output_tokens: 0 },
-  }
-}
+// Note: buildEmptyNonStreamingResponse is exported from utils/sse.ts for consistency
