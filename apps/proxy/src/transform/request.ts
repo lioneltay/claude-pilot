@@ -38,13 +38,13 @@ Returns a summary with source citations.`,
 }
 
 // Model mapping: Anthropic model IDs → Copilot model IDs
-// Copilot supports: claude-haiku-4.5, claude-sonnet-4.5, claude-opus-4
+// Copilot supports: claude-haiku-4.5, claude-sonnet-4.5, claude-opus-4.5
 export function mapModel(anthropicModel: string): string {
   const model = anthropicModel.toLowerCase()
 
   // Match by model family
   if (model.includes('opus')) {
-    return 'claude-opus-4'
+    return 'claude-opus-4.5'
   }
   if (model.includes('sonnet')) {
     return 'claude-sonnet-4.5'
