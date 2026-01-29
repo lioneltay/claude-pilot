@@ -1,6 +1,6 @@
 {
   "name": "@lioneltay/claude-pilot",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "type": "module",
   "description": "CLI to run Claude Code through GitHub Copilot's API",
   "bin": {
