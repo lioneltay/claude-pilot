@@ -8,10 +8,11 @@ import { start } from './commands/start.js'
 import { stop } from './commands/stop.js'
 import { status } from './commands/status.js'
 import { dashboard } from './commands/dashboard.js'
+import { update } from './commands/update.js'
 import { isDaemonRunning } from './daemon.js'
 import { loadCredentials } from '@claude-pilot/proxy'
 import { DEFAULT_PORT, AUTH_FILE } from './config.js'
-import { checkAndUpdate } from './utils/update.js'
+import { checkVersionInBackground } from './utils/versionCheck.js'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
@@ -33,7 +34,7 @@ function getVersion(): string {
 const VERSION = getVersion()
 
 // Our built-in commands
-const BUILTIN_COMMANDS = ['login', 'logout', 'start', 'stop', 'status', 'dashboard', 'help']
+const BUILTIN_COMMANDS = ['login', 'logout', 'start', 'stop', 'status', 'dashboard', 'update', 'help']
 
 // Check if the first argument is one of our commands
 function isBuiltinCommand(args: string[]): boolean {
@@ -100,9 +101,6 @@ function runClaudeWithEnv(args: string[], port: number): void {
 
 // Main entry point
 async function main() {
-  // Check for updates on launch
-  await checkAndUpdate()
-
   const args = process.argv.slice(2)
 
   // If no args or first arg is not a builtin command, run claude
@@ -110,6 +108,9 @@ async function main() {
     await runClaude(args)
     return
   }
+
+  // Check for updates (non-blocking, only for builtin commands)
+  checkVersionInBackground()
 
   // Otherwise, handle our builtin commands with commander
   const program = new Command()
@@ -190,6 +191,18 @@ async function main() {
         await dashboard()
       } catch (error) {
         console.error('Dashboard failed:', error instanceof Error ? error.message : error)
+        process.exit(1)
+      }
+    })
+
+  program
+    .command('update')
+    .description('Check for and install updates')
+    .action(async () => {
+      try {
+        await update()
+      } catch (error) {
+        console.error('Update failed:', error instanceof Error ? error.message : error)
         process.exit(1)
       }
     })
