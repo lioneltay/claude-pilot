@@ -2,7 +2,8 @@
 
 import { execSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { CONFIG_DIR } from '../config.js'
 
 const PACKAGE_NAME = '@lioneltay/claude-pilot'
@@ -32,13 +33,11 @@ function writeCache(cache: VersionCache): void {
 
 function getInstalledVersion(): string | null {
   try {
-    const output = execSync(`npm list -g ${PACKAGE_NAME} --depth=0 --json`, {
-      encoding: 'utf-8',
-      timeout: 5000,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    })
-    const data = JSON.parse(output)
-    return data.dependencies?.[PACKAGE_NAME]?.version || null
+    const __filename = fileURLToPath(import.meta.url)
+    const __dirname = dirname(__filename)
+    const pkgPath = join(__dirname, '..', 'package.json')
+    const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'))
+    return pkg.version || null
   } catch {
     return null
   }
@@ -54,6 +53,16 @@ function fetchLatestVersion(): string | null {
   } catch {
     return null
   }
+}
+
+/**
+ * Get cached latest version (returns null if no cache or cache is stale)
+ */
+export function getLatestVersionCached(): string | null {
+  const cache = readCache()
+  if (!cache) return null
+  if (Date.now() - cache.lastCheck > CHECK_INTERVAL_MS) return null
+  return cache.latestVersion
 }
 
 /**
@@ -74,7 +83,7 @@ export function checkVersionInBackground(): void {
           const installed = getInstalledVersion()
           if (installed && cache.latestVersion !== installed) {
             console.log(`\n📦 Update available: ${installed} → ${cache.latestVersion}`)
-            console.log('   Run: claude-pilot update\n')
+            console.log(`   npm install -g @lioneltay/claude-pilot@latest\n`)
           }
         }
         return
@@ -88,7 +97,7 @@ export function checkVersionInBackground(): void {
         const installed = getInstalledVersion()
         if (installed && latest !== installed) {
           console.log(`\n📦 Update available: ${installed} → ${latest}`)
-          console.log('   Run: claude-pilot update\n')
+          console.log(`   npm install -g @lioneltay/claude-pilot@latest\n`)
         }
       }
     } catch {
