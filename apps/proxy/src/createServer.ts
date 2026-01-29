@@ -9,7 +9,7 @@ import { transformResponse } from './transform/response.js'
 import { createStreamTransformer } from './transform/streaming.js'
 import { executeWebSearch, formatAsToolResult } from './services/webSearch.js'
 import { isCopilotCLIAvailable } from './utils/validation.js'
-import { detectWebSearchRequest, isSuggestionRequest, isSidecarRequest, getXInitiator, getSystemText } from './utils/detection.js'
+import { detectWebSearchRequest, isSuggestionRequest, isSidecarRequest, getXInitiator, getSystemText, hasImageContent } from './utils/detection.js'
 import { buildEmptyStreamingResponse, buildEmptyNonStreamingResponse, setStreamingHeaders } from './utils/sse.js'
 import {
   buildWebSearchStreamingResponse,
@@ -402,6 +402,7 @@ async function handleFreeModelRequest(
   openaiRequest.model = FREE_MODEL
 
   const copilotToken = await getValidCopilotToken(credentials, authFile)
+  const isVisionRequest = hasImageContent(request)
 
   const response = await fetch(`${COPILOT_API_URL}/chat/completions`, {
     method: 'POST',
@@ -410,6 +411,7 @@ async function handleFreeModelRequest(
       'Content-Type': 'application/json',
       Authorization: `Bearer ${copilotToken}`,
       'X-Initiator': 'agent', // Free model requests don't need billing
+      ...(isVisionRequest && { 'Copilot-Vision-Request': 'true' }),
     },
     body: JSON.stringify(openaiRequest),
   })
@@ -503,6 +505,7 @@ async function handleNormalRequest(
   const openaiRequest = transformRequest(requestWithTools)
   const copilotToken = await getValidCopilotToken(credentials, authFile)
 
+  const isVisionRequest = hasImageContent(requestWithTools)
   const response = await fetch(`${COPILOT_API_URL}/chat/completions`, {
     method: 'POST',
     headers: {
@@ -510,6 +513,7 @@ async function handleNormalRequest(
       'Content-Type': 'application/json',
       Authorization: `Bearer ${copilotToken}`,
       'X-Initiator': xInitiator,
+      ...(isVisionRequest && { 'Copilot-Vision-Request': 'true' }),
     },
     body: JSON.stringify(openaiRequest),
   })

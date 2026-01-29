@@ -7,7 +7,7 @@ import { transformResponse } from './transform/response.js'
 import { createStreamTransformer } from './transform/streaming.js'
 import { executeWebSearch, formatAsToolResult } from './services/webSearch.js'
 import { isCopilotCLIAvailable } from './utils/validation.js'
-import { detectWebSearchRequest, isSuggestionRequest, getXInitiator, getSystemText } from './utils/detection.js'
+import { detectWebSearchRequest, isSuggestionRequest, getXInitiator, getSystemText, hasImageContent } from './utils/detection.js'
 import { buildEmptyStreamingResponse, buildEmptyNonStreamingResponse, setStreamingHeaders } from './utils/sse.js'
 import {
   buildWebSearchStreamingResponse,
@@ -281,6 +281,7 @@ async function handleNormalRequest(
   // Transform and forward to Copilot
   const openaiRequest = transformRequest(requestWithTools)
   const copilotToken = await getValidCopilotToken(credentials!)
+  const isVisionRequest = hasImageContent(requestWithTools)
 
   const response = await fetch(`${COPILOT_API_URL}/chat/completions`, {
     method: 'POST',
@@ -289,6 +290,7 @@ async function handleNormalRequest(
       'Content-Type': 'application/json',
       Authorization: `Bearer ${copilotToken}`,
       'X-Initiator': xInitiator,
+      ...(isVisionRequest && { 'Copilot-Vision-Request': 'true' }),
     },
     body: JSON.stringify(openaiRequest),
   })

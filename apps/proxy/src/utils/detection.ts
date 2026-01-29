@@ -106,6 +106,23 @@ export function isSubagentRequest(request: AnthropicRequest): boolean {
  * Note: Sidecars are routed to free models (gpt-5-mini), so X-Initiator
  * doesn't matter for them.
  */
+/**
+ * Check if request contains image content (for vision requests)
+ */
+export function hasImageContent(request: AnthropicRequest): boolean {
+  for (const message of request.messages) {
+    if (typeof message.content === 'string') continue
+    for (const block of message.content) {
+      if (block.type === 'image') return true
+      // Also check tool_result content which can contain images
+      if (block.type === 'tool_result' && Array.isArray(block.content)) {
+        if (block.content.some((b) => b.type === 'image')) return true
+      }
+    }
+  }
+  return false
+}
+
 export function getXInitiator(request: AnthropicRequest): 'user' | 'agent' {
   // Subagents are agent-initiated (not direct user prompts)
   if (isSubagentRequest(request)) {
