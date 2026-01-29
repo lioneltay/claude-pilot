@@ -189,6 +189,10 @@ export function createStreamTransformer(model: string) {
 
           const stopReason = mapFinishReason(choice.finish_reason)
 
+          // Get final usage from the chunk (OpenAI sends usage in the last chunk)
+          const inputTokens = openaiChunk.usage?.prompt_tokens || state.inputTokens
+          const outputTokens = openaiChunk.usage?.completion_tokens || state.outputTokens
+
           emit(controller, {
             type: 'message_delta',
             delta: {
@@ -196,7 +200,10 @@ export function createStreamTransformer(model: string) {
               stop_sequence: null,
             },
             usage: {
-              output_tokens: openaiChunk.usage?.completion_tokens || state.outputTokens,
+              input_tokens: inputTokens,
+              cache_creation_input_tokens: 0,
+              cache_read_input_tokens: 0,
+              output_tokens: outputTokens,
             },
           })
 
