@@ -40,7 +40,8 @@ function isBuiltinCommand(args: string[]): boolean {
   const firstArg = args[0]
   if (!firstArg) return false
   // Check for our commands or flags like --help, --version, -h, -V
-  return BUILTIN_COMMANDS.includes(firstArg) || firstArg.startsWith('-')
+  const commanderFlags = ['--help', '--version', '-h', '-V']
+  return BUILTIN_COMMANDS.includes(firstArg) || commanderFlags.includes(firstArg)
 }
 
 // Run claude with proxy environment configured
