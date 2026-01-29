@@ -21,6 +21,9 @@ pnpm auth             # Authenticate with GitHub Copilot (device flow)
 # Logs
 pnpm logs:clear       # Clear request logs
 tail -f logs/requests.jsonl | jq .  # Watch live logs
+
+# Release
+pnpm publish:cli      # Publish CLI to npm (bump version first)
 ```
 
 ## Architecture
