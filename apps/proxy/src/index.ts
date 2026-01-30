@@ -9,6 +9,7 @@ import { executeWebSearch, formatAsToolResult } from './services/webSearch.js'
 import { isCopilotCLIAvailable } from './utils/validation.js'
 import { detectWebSearchRequest, isSuggestionRequest, getXInitiator, getSystemText, hasImageContent } from './utils/detection.js'
 import { estimateInputTokens } from './utils/tokenEstimator.js'
+import { countRequestTokens } from './utils/tokenCounter.js'
 import { buildEmptyStreamingResponse, buildEmptyNonStreamingResponse, setStreamingHeaders } from './utils/sse.js'
 import {
   buildWebSearchStreamingResponse,
@@ -98,11 +99,11 @@ async function main() {
     )
   })
 
-  // Token counting endpoint (stub - returns estimates)
+  // Token counting endpoint (using tiktoken approximation)
   fastify.post('/v1/messages/count_tokens', async (request) => {
     const body = request.body as AnthropicRequest
-    const charCount = estimateCharCount(body)
-    return { input_tokens: Math.ceil(charCount / 4) }
+    const inputTokens = countRequestTokens(body)
+    return { input_tokens: inputTokens }
   })
 
   // Start server
@@ -390,32 +391,6 @@ async function handleCopilotError(
       message: `Copilot API error: ${response.status} ${response.statusText} - ${errorText}`,
     },
   }
-}
-
-// Estimate character count for token counting
-function estimateCharCount(body: AnthropicRequest): number {
-  let charCount = 0
-
-  if (body.system) {
-    charCount +=
-      typeof body.system === 'string'
-        ? body.system.length
-        : body.system.reduce((sum, b) => sum + b.text.length, 0)
-  }
-
-  for (const msg of body.messages) {
-    if (typeof msg.content === 'string') {
-      charCount += msg.content.length
-    } else {
-      for (const block of msg.content) {
-        if (block.type === 'text') {
-          charCount += block.text.length
-        }
-      }
-    }
-  }
-
-  return charCount
 }
 
 main()
