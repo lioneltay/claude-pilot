@@ -25,3 +25,6 @@ logs/
 
 # Turbo
 .turbo/
+
+# Private research notes
+.private/

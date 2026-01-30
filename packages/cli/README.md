@@ -8,29 +8,17 @@ Run [Claude Code](https://docs.anthropic.com/en/docs/claude-code) through GitHub
 
 You need an active GitHub Copilot subscription (Individual, Business, or Enterprise).
 
-### 2. Copilot CLI
-
-Install the GitHub Copilot CLI:
+### 2. [Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli)
 
 ```bash
 npm install -g @github/copilot
-
-# Verify installation
-copilot --version
 ```
 
-### 3. Claude Code
-
-Install the Claude Code CLI:
+### 3. [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 
 ```bash
-curl -fsSL https://claude.ai/install.sh | bash
-
-# Verify installation
-claude --version
+npm install -g @anthropic-ai/claude-code
 ```
-
-See [Claude Code setup docs](https://code.claude.com/docs/en/setup) for more details.
 
 ## Installation
 
@@ -50,9 +38,7 @@ claude-pilot
 
 ## Features
 
-- **Web Search** - Works via Copilot CLI at no extra cost
-- **Cost Optimization** - Tool continuations are free, only new user messages are charged (~$0.04)
-- **Free Suggestions** - Autocomplete requests routed to GPT-4.1 (free model)
+- **Web Search** - Works via Copilot CLI
 - **Auto Token Refresh** - Copilot tokens refresh automatically before expiry
 - **Dashboard** - Web-based log viewer at `http://localhost:51080/`
 - **Zero Config** - Proxy auto-starts and finds an available port
