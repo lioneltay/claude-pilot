@@ -10,6 +10,7 @@ type StreamState = {
   toolCalls: Map<number, { id: string; name: string; arguments: string }>
   inputTokens: number
   outputTokens: number
+  estimatedInputTokens: number
 }
 
 function createMessageStartEvent(state: StreamState) {
@@ -24,14 +25,16 @@ function createMessageStartEvent(state: StreamState) {
       stop_reason: null,
       stop_sequence: null,
       usage: {
-        input_tokens: state.inputTokens,
-        output_tokens: 0,
+        // Send estimated input_tokens here (Anthropic's format requires it in message_start)
+        // We'll update with actual value in message_delta for clients that read it there
+        input_tokens: state.estimatedInputTokens,
+        output_tokens: 1,
       },
     },
   }
 }
 
-export function createStreamTransformer(model: string) {
+export function createStreamTransformer(model: string, estimatedInputTokens: number = 0) {
   const state: StreamState = {
     messageId: `msg_${Date.now()}`,
     model,
@@ -39,6 +42,7 @@ export function createStreamTransformer(model: string) {
     toolCalls: new Map(),
     inputTokens: 0,
     outputTokens: 0,
+    estimatedInputTokens,
   }
 
   let sentMessageStart = false
@@ -207,7 +211,16 @@ export function createStreamTransformer(model: string) {
             },
           })
 
-          emit(controller, { type: 'message_stop' })
+          // Send message_stop with full usage (like LiteLLM does)
+          emit(controller, {
+            type: 'message_stop',
+            usage: {
+              input_tokens: inputTokens,
+              output_tokens: outputTokens,
+              cache_creation_input_tokens: 0,
+              cache_read_input_tokens: 0,
+            },
+          })
           sentMessageStop = true
         }
 

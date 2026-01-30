@@ -8,6 +8,7 @@ import { createStreamTransformer } from './transform/streaming.js'
 import { executeWebSearch, formatAsToolResult } from './services/webSearch.js'
 import { isCopilotCLIAvailable } from './utils/validation.js'
 import { detectWebSearchRequest, isSuggestionRequest, getXInitiator, getSystemText, hasImageContent } from './utils/detection.js'
+import { estimateInputTokens } from './utils/tokenEstimator.js'
 import { buildEmptyStreamingResponse, buildEmptyNonStreamingResponse, setStreamingHeaders } from './utils/sse.js'
 import {
   buildWebSearchStreamingResponse,
@@ -325,9 +326,10 @@ async function handleNormalRequest(
       },
     })
 
+    const estimatedTokens = estimateInputTokens(requestWithTools)
     const transformed = response
       .body!.pipeThrough(captureStream)
-      .pipeThrough(createStreamTransformer(openaiRequest.model))
+      .pipeThrough(createStreamTransformer(openaiRequest.model, estimatedTokens))
 
     return reply.send(transformed)
   }

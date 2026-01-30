@@ -10,6 +10,7 @@ import { createStreamTransformer } from './transform/streaming.js'
 import { executeWebSearch, formatAsToolResult } from './services/webSearch.js'
 import { isCopilotCLIAvailable } from './utils/validation.js'
 import { detectWebSearchRequest, isSuggestionRequest, isSidecarRequest, getXInitiator, getSystemText, hasImageContent } from './utils/detection.js'
+import { estimateInputTokens } from './utils/tokenEstimator.js'
 import { buildEmptyStreamingResponse, buildEmptyNonStreamingResponse, setStreamingHeaders } from './utils/sse.js'
 import {
   buildWebSearchStreamingResponse,
@@ -425,7 +426,8 @@ async function handleFreeModelRequest(
     reply.header('Cache-Control', 'no-cache')
     reply.header('Connection', 'keep-alive')
 
-    const transformed = response.body!.pipeThrough(createStreamTransformer(FREE_MODEL))
+    const estimatedTokens = estimateInputTokens(request)
+    const transformed = response.body!.pipeThrough(createStreamTransformer(FREE_MODEL, estimatedTokens))
     return reply.send(transformed)
   }
 
@@ -545,7 +547,8 @@ async function handleNormalRequest(
       },
     })
 
-    const transformed = response.body!.pipeThrough(captureStream).pipeThrough(createStreamTransformer(openaiRequest.model))
+    const estimatedTokens = estimateInputTokens(requestWithTools)
+    const transformed = response.body!.pipeThrough(captureStream).pipeThrough(createStreamTransformer(openaiRequest.model, estimatedTokens))
     return reply.send(transformed)
   }
 
