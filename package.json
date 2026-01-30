@@ -11,6 +11,8 @@
     "start": "turbo start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "typecheck": "turbo typecheck",
     "test": "./scripts/test-regression.sh",
     "logs:clear": "rm -f logs/requests.jsonl && echo 'Logs cleared'",
@@ -23,6 +25,7 @@
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/parser": "^8.54.0",
     "eslint": "^9.39.2",
+    "prettier": "^3.8.1",
     "turbo": "^2.5.4",
     "typescript-eslint": "^8.54.0"
   },
