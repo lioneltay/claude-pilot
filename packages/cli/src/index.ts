@@ -11,7 +11,7 @@ import { dashboard } from './commands/dashboard.js'
 import { isDaemonRunning } from './daemon.js'
 import { loadCredentials } from '@claude-pilot/proxy'
 import { DEFAULT_PORT, AUTH_FILE } from './config.js'
-import { checkVersionInBackground, getLatestVersionCached } from './utils/versionCheck.js'
+import { checkVersionInBackground, getLatestVersionCached, isNewerVersion } from './utils/versionCheck.js'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
@@ -117,7 +117,7 @@ async function main() {
 
   // Custom version output that shows if outdated
   const latestVersion = getLatestVersionCached()
-  const versionOutput = latestVersion && latestVersion !== VERSION
+  const versionOutput = latestVersion && isNewerVersion(VERSION, latestVersion)
     ? `${VERSION} (update available: ${latestVersion})`
     : VERSION
 

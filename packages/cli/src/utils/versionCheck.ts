@@ -56,6 +56,21 @@ function fetchLatestVersion(): string | null {
 }
 
 /**
+ * Simple semver comparison - returns true if v2 > v1
+ */
+export function isNewerVersion(v1: string, v2: string): boolean {
+  const parts1 = v1.split('.').map(Number)
+  const parts2 = v2.split('.').map(Number)
+  for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+    const p1 = parts1[i] || 0
+    const p2 = parts2[i] || 0
+    if (p2 > p1) return true
+    if (p2 < p1) return false
+  }
+  return false
+}
+
+/**
  * Get cached latest version (returns null if no cache or cache is stale)
  */
 export function getLatestVersionCached(): string | null {
@@ -81,7 +96,7 @@ export function checkVersionInBackground(): void {
       if (cache && now - cache.lastCheck < CHECK_INTERVAL_MS) {
         if (cache.latestVersion) {
           const installed = getInstalledVersion()
-          if (installed && cache.latestVersion !== installed) {
+          if (installed && isNewerVersion(installed, cache.latestVersion)) {
             console.log(`\n📦 Update available: ${installed} → ${cache.latestVersion}`)
             console.log(`   npm install -g @lioneltay/claude-pilot@latest\n`)
           }
@@ -95,7 +110,7 @@ export function checkVersionInBackground(): void {
 
       if (latest) {
         const installed = getInstalledVersion()
-        if (installed && latest !== installed) {
+        if (installed && isNewerVersion(installed, latest)) {
           console.log(`\n📦 Update available: ${installed} → ${latest}`)
           console.log(`   npm install -g @lioneltay/claude-pilot@latest\n`)
         }
