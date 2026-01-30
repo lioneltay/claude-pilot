@@ -3,9 +3,7 @@
 import type { AnthropicResponse, AnthropicContentBlock } from '../types/anthropic.js'
 import type { OpenAIResponse } from '../types/openai.js'
 
-function mapFinishReason(
-  finishReason: string | null
-): AnthropicResponse['stop_reason'] {
+function mapFinishReason(finishReason: string | null): AnthropicResponse['stop_reason'] {
   switch (finishReason) {
     case 'stop':
       return 'end_turn'

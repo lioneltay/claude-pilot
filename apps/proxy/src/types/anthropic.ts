@@ -79,7 +79,11 @@ export type AnthropicStreamEvent =
   | { type: 'content_block_start'; index: number; content_block: AnthropicContentBlock }
   | { type: 'content_block_delta'; index: number; delta: AnthropicDelta }
   | { type: 'content_block_stop'; index: number }
-  | { type: 'message_delta'; delta: { stop_reason: string | null; stop_sequence?: string | null }; usage: { output_tokens: number } }
+  | {
+      type: 'message_delta'
+      delta: { stop_reason: string | null; stop_sequence?: string | null }
+      usage: { output_tokens: number }
+    }
   | { type: 'message_stop' }
   | { type: 'ping' }
   | { type: 'error'; error: { type: string; message: string } }

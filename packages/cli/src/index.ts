@@ -11,7 +11,11 @@ import { dashboard } from './commands/dashboard.js'
 import { isDaemonRunning } from './daemon.js'
 import { loadCredentials } from '@claude-pilot/proxy'
 import { DEFAULT_PORT, AUTH_FILE } from './config.js'
-import { checkVersionInBackground, getLatestVersionCached, isNewerVersion } from './utils/versionCheck.js'
+import {
+  checkVersionInBackground,
+  getLatestVersionCached,
+  isNewerVersion,
+} from './utils/versionCheck.js'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
@@ -87,7 +91,9 @@ function runClaudeWithEnv(args: string[], port: number): void {
 
   child.on('error', (error) => {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      console.error('Claude CLI not found. Install it with: npm install -g @anthropic-ai/claude-code')
+      console.error(
+        'Claude CLI not found. Install it with: npm install -g @anthropic-ai/claude-code'
+      )
     } else {
       console.error('Failed to run claude:', error.message)
     }
@@ -117,9 +123,10 @@ async function main() {
 
   // Custom version output that shows if outdated
   const latestVersion = getLatestVersionCached()
-  const versionOutput = latestVersion && isNewerVersion(VERSION, latestVersion)
-    ? `${VERSION} (update available: ${latestVersion})`
-    : VERSION
+  const versionOutput =
+    latestVersion && isNewerVersion(VERSION, latestVersion)
+      ? `${VERSION} (update available: ${latestVersion})`
+      : VERSION
 
   program
     .name('claude-pilot')

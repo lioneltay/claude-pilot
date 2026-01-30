@@ -15,6 +15,7 @@ We created a passthrough proxy that forwards requests to the real Anthropic API 
 **Location:** `apps/proxy-spy/src/index.ts`
 
 **How it works:**
+
 ```
 Claude Code → Spy Proxy (port 8082) → Anthropic API
                     ↓
@@ -22,6 +23,7 @@ Claude Code → Spy Proxy (port 8082) → Anthropic API
 ```
 
 **Usage:**
+
 ```bash
 # Terminal 1: Start the spy proxy
 pnpm --filter proxy-spy dev
@@ -31,17 +33,19 @@ ANTHROPIC_BASE_URL=http://localhost:8082 claude
 ```
 
 **What it logs:**
+
 - Full request body (system prompt, messages, tools)
 - Full response body (streaming SSE events captured and reassembled)
 - Headers, timing, status codes
 
-**Key discovery:** We found that web search sends a *separate* API request with a distinct system prompt pattern, not a normal tool_result flow.
+**Key discovery:** We found that web search sends a _separate_ API request with a distinct system prompt pattern, not a normal tool_result flow.
 
 ### Technique 2: Test Proxy with tmux
 
 Run our proxy and Claude Code side-by-side to test changes in real-time.
 
 **Setup:**
+
 ```bash
 # Terminal 1: Run the proxy with hot reload
 pnpm dev
@@ -54,12 +58,14 @@ tmux attach -t test
 ```
 
 **Workflow:**
+
 1. Make changes to proxy code
 2. tsx hot-reloads the proxy
 3. Test in the Claude Code tmux session
 4. Check `logs/requests.jsonl` for detailed request/response logs
 
 **Key tip:** When sending input to tmux programmatically, add a small delay before pressing Enter:
+
 ```bash
 tmux send-keys -t test "search the web for bitcoin price" && sleep 0.1 && tmux send-keys -t test Enter
 ```
@@ -69,6 +75,7 @@ tmux send-keys -t test "search the web for bitcoin price" && sleep 0.1 && tmux s
 Enable verbose logging to see what Copilot CLI sends/receives.
 
 **Usage:**
+
 ```bash
 copilot --log-level debug --allow-all -p "search the web for X"
 ```
@@ -76,6 +83,7 @@ copilot --log-level debug --allow-all -p "search the web for X"
 **Log location:** `~/.copilot/logs/`
 
 **What we learned:**
+
 - `web_search` tool definition and schema
 - Response format from Copilot's server-side search
 - Tool execution timing (~10s for search)
@@ -85,15 +93,17 @@ copilot --log-level debug --allow-all -p "search the web for X"
 When debugging response format issues, hardcode an obvious response to verify the flow works.
 
 **Example:**
+
 ```typescript
 // In proxy handler, temporarily return:
 const testResponse = {
-  summary: "BANANA MAN - This is a test response",
-  sources: [{ title: "Test Source", url: "https://example.com" }]
+  summary: 'BANANA MAN - This is a test response',
+  sources: [{ title: 'Test Source', url: 'https://example.com' }],
 }
 ```
 
 **Why this helps:**
+
 - Confirms request detection is working
 - Isolates whether the issue is in search execution vs response formatting
 - Quick feedback loop without waiting for real searches
@@ -103,6 +113,7 @@ const testResponse = {
 Capture real Anthropic responses and compare structure.
 
 **Process:**
+
 1. Run spy proxy with real Anthropic API key
 2. Trigger a web search in Claude Code
 3. Parse `logs/spy.jsonl` to extract SSE events
@@ -139,11 +150,11 @@ When something doesn't work:
 
 ### Log File Locations
 
-| Log | Location | Content |
-|-----|----------|---------|
+| Log            | Location              | Content                        |
+| -------------- | --------------------- | ------------------------------ |
 | Proxy requests | `logs/requests.jsonl` | All proxied requests/responses |
-| Spy proxy | `logs/spy.jsonl` | Real Anthropic API traffic |
-| Copilot CLI | `~/.copilot/logs/` | Copilot debug logs |
+| Spy proxy      | `logs/spy.jsonl`      | Real Anthropic API traffic     |
+| Copilot CLI    | `~/.copilot/logs/`    | Copilot debug logs             |
 
 ### Useful Commands
 
@@ -178,8 +189,8 @@ type WebSearchExecutionRequest = {
   messages: [
     {
       role: 'user'
-      content: string  // "Perform a web search for the query: {query}"
-    }
+      content: string // "Perform a web search for the query: {query}"
+    },
   ]
 }
 ```
@@ -221,22 +232,22 @@ type WebSearchExecutionRequest = {
 // Content block types
 type ServerToolUseBlock = {
   type: 'server_tool_use'
-  id: string  // Format: "srvtoolu_01XXXXXXXXXXXXXXXXXX"
+  id: string // Format: "srvtoolu_01XXXXXXXXXXXXXXXXXX"
   name: 'web_search'
-  input: Record<string, never>  // Empty object, query comes via delta
+  input: Record<string, never> // Empty object, query comes via delta
 }
 
 type WebSearchResult = {
   type: 'web_search_result'
   title: string
   url: string
-  encrypted_content: string  // Base64 encoded, ~2KB - IGNORED by Claude Code
-  page_age?: string  // e.g., "3 weeks ago", "5 days ago"
+  encrypted_content: string // Base64 encoded, ~2KB - IGNORED by Claude Code
+  page_age?: string // e.g., "3 weeks ago", "5 days ago"
 }
 
 type WebSearchToolResultBlock = {
   type: 'web_search_tool_result'
-  tool_use_id: string  // Must match ServerToolUseBlock.id
+  tool_use_id: string // Must match ServerToolUseBlock.id
   content: WebSearchResult[]
 }
 
@@ -248,7 +259,7 @@ type TextBlock = {
 // Delta types for streaming
 type InputJsonDelta = {
   type: 'input_json_delta'
-  partial_json: string  // JSON string: '{"query": "search term"}'
+  partial_json: string // JSON string: '{"query": "search term"}'
 }
 
 type TextDelta = {
@@ -263,7 +274,7 @@ type CitationsDelta = {
     cited_text: string
     url: string
     title: string
-    encrypted_index: string  // IGNORED by Claude Code
+    encrypted_index: string // IGNORED by Claude Code
   }
 }
 
@@ -369,6 +380,7 @@ data: {"type":"message_stop"}
 ```
 
 Query via delta:
+
 ```json
 {
   "type": "content_block_delta",
@@ -423,6 +435,7 @@ Query via delta:
 ```
 
 Text delta:
+
 ```json
 {
   "type": "content_block_delta",
@@ -435,6 +448,7 @@ Text delta:
 ```
 
 Citation delta (optional):
+
 ```json
 {
   "type": "content_block_delta",
@@ -458,23 +472,23 @@ Citation delta (optional):
 
 ### From web_search_tool_result.content[]
 
-| Field | Used | Notes |
-|-------|------|-------|
-| `type` | ✅ | Must be `"web_search_result"` |
-| `title` | ✅ | Displayed in UI |
-| `url` | ✅ | Displayed in UI, used for links |
-| `page_age` | ✅ | Displayed in UI |
-| `encrypted_content` | ❌ | **Ignored** - can be dummy value |
+| Field               | Used | Notes                            |
+| ------------------- | ---- | -------------------------------- |
+| `type`              | ✅   | Must be `"web_search_result"`    |
+| `title`             | ✅   | Displayed in UI                  |
+| `url`               | ✅   | Displayed in UI, used for links  |
+| `page_age`          | ✅   | Displayed in UI                  |
+| `encrypted_content` | ❌   | **Ignored** - can be dummy value |
 
 ### From citations
 
-| Field | Used | Notes |
-|-------|------|-------|
-| `type` | ✅ | Must be `"web_search_result_location"` |
-| `cited_text` | ✅ | The quoted text |
-| `url` | ✅ | Link to source |
-| `title` | ✅ | Source title |
-| `encrypted_index` | ❌ | **Ignored** - can be dummy value |
+| Field             | Used | Notes                                  |
+| ----------------- | ---- | -------------------------------------- |
+| `type`            | ✅   | Must be `"web_search_result_location"` |
+| `cited_text`      | ✅   | The quoted text                        |
+| `url`             | ✅   | Link to source                         |
+| `title`           | ✅   | Source title                           |
+| `encrypted_index` | ❌   | **Ignored** - can be dummy value       |
 
 ### UI "Did X searches" Counter
 
@@ -538,11 +552,11 @@ const events = [
     content_block: {
       type: 'web_search_tool_result',
       tool_use_id: toolUseId,
-      content: sources.map(s => ({
+      content: sources.map((s) => ({
         type: 'web_search_result',
         title: s.title,
         url: s.url,
-        encrypted_content: 'encrypted',  // Dummy - ignored
+        encrypted_content: 'encrypted', // Dummy - ignored
         page_age: 'recent',
       })),
     },

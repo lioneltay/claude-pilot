@@ -7,10 +7,20 @@ import { transformResponse } from './transform/response.js'
 import { createStreamTransformer } from './transform/streaming.js'
 import { executeWebSearch, formatAsToolResult } from './services/webSearch.js'
 import { isCopilotCLIAvailable } from './utils/validation.js'
-import { detectWebSearchRequest, isSuggestionRequest, getXInitiator, getSystemText, hasImageContent } from './utils/detection.js'
+import {
+  detectWebSearchRequest,
+  isSuggestionRequest,
+  getXInitiator,
+  getSystemText,
+  hasImageContent,
+} from './utils/detection.js'
 import { estimateInputTokens } from './utils/tokenEstimator.js'
 import { countRequestTokens } from './utils/tokenCounter.js'
-import { buildEmptyStreamingResponse, buildEmptyNonStreamingResponse, setStreamingHeaders } from './utils/sse.js'
+import {
+  buildEmptyStreamingResponse,
+  buildEmptyNonStreamingResponse,
+  setStreamingHeaders,
+} from './utils/sse.js'
 import {
   buildWebSearchStreamingResponse,
   buildWebSearchNonStreamingResponse,
@@ -224,7 +234,11 @@ async function handleNormalRequest(
   credentials: Awaited<ReturnType<typeof loadCredentials>>,
   requestId: string,
   startTime: number,
-  reply: { header: (k: string, v: string) => void; send: (d: unknown) => unknown; code: (c: number) => void },
+  reply: {
+    header: (k: string, v: string) => void
+    send: (d: unknown) => unknown
+    code: (c: number) => void
+  },
   logger: { info: (obj: object) => void; error: (obj: object) => void }
 ) {
   // Add web_search tool if not present

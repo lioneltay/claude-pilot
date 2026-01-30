@@ -8,9 +8,7 @@ const execAsync = promisify(exec)
 /**
  * Check if Copilot CLI is installed and accessible
  */
-export async function isCopilotCLIAvailable(
-  copilotPath = 'copilot'
-): Promise<boolean> {
+export async function isCopilotCLIAvailable(copilotPath = 'copilot'): Promise<boolean> {
   try {
     await execAsync(`${copilotPath} --version`)
     return true

@@ -99,7 +99,10 @@ export function summarizeMessages(messages: Array<{ role: string; content: unkno
       hasToolResult = blocks.some((b) => b.type === 'tool_result')
 
       const textBlocks = blocks.filter((b) => b.type === 'text' && b.text)
-      contentPreview = textBlocks.map((b) => b.text?.slice(0, 100)).join(' ').slice(0, 200)
+      contentPreview = textBlocks
+        .map((b) => b.text?.slice(0, 100))
+        .join(' ')
+        .slice(0, 200)
       contentLength = JSON.stringify(msg.content).length
     }
 

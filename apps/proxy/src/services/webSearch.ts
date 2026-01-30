@@ -99,7 +99,9 @@ function parseWebSearchOutput(output: string, originalQuery: string): WebSearchR
 
   // First, try to find a clean JSON object with query, summary, sources
   // Look for JSON that starts with { on its own line
-  const jsonMatch = output.match(/^\{[^{}]*"query"[^{}]*"summary"[^{}]*"sources"\s*:\s*\[[^\]]*\][^{}]*\}/m)
+  const jsonMatch = output.match(
+    /^\{[^{}]*"query"[^{}]*"summary"[^{}]*"sources"\s*:\s*\[[^\]]*\][^{}]*\}/m
+  )
 
   if (jsonMatch) {
     try {
@@ -115,7 +117,9 @@ function parseWebSearchOutput(output: string, originalQuery: string): WebSearchR
   }
 
   // Second attempt: look for the JSON block more flexibly
-  const jsonMatch2 = output.match(/\{\s*\n\s*"query"[\s\S]*?"sources"\s*:\s*\[[\s\S]*?\]\s*\n\s*\}/m)
+  const jsonMatch2 = output.match(
+    /\{\s*\n\s*"query"[\s\S]*?"sources"\s*:\s*\[[\s\S]*?\]\s*\n\s*\}/m
+  )
 
   if (jsonMatch2) {
     try {
@@ -137,7 +141,10 @@ function parseWebSearchOutput(output: string, originalQuery: string): WebSearchR
 
   for (let i = 0; i < lines.length; i++) {
     // Look for start of actual content (markdown headers or bold text)
-    if (contentStart === -1 && (lines[i].startsWith('## ') || lines[i].startsWith('**') || lines[i].startsWith('# '))) {
+    if (
+      contentStart === -1 &&
+      (lines[i].startsWith('## ') || lines[i].startsWith('**') || lines[i].startsWith('# '))
+    ) {
       contentStart = i
     }
     // Look for end (usage stats)
@@ -156,7 +163,7 @@ function parseWebSearchOutput(output: string, originalQuery: string): WebSearchR
     let match: RegExpExecArray | null
     while ((match = linkRegex.exec(summary)) !== null) {
       // Avoid duplicates
-      if (!sources.some(s => s.url === match![2])) {
+      if (!sources.some((s) => s.url === match![2])) {
         sources.push({ title: match[1], url: match[2] })
       }
     }
@@ -180,9 +187,10 @@ function parseWebSearchOutput(output: string, originalQuery: string): WebSearchR
  * Format web search results as a tool_result content string
  */
 export function formatAsToolResult(result: WebSearchResult): string {
-  const sourcesText = result.sources.length > 0
-    ? `\n\n**Sources:**\n${result.sources.map(s => `- [${s.title}](${s.url})`).join('\n')}`
-    : ''
+  const sourcesText =
+    result.sources.length > 0
+      ? `\n\n**Sources:**\n${result.sources.map((s) => `- [${s.title}](${s.url})`).join('\n')}`
+      : ''
 
   return `# Web Search Results for: "${result.query}"
 

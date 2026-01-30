@@ -65,6 +65,7 @@ Claude Code → POST /v1/messages (Anthropic format)
 ### Billing Optimization
 
 The proxy sets `X-Initiator` header based on request context:
+
 - `user`: New user message (charged ~$0.04)
 - `agent`: Tool continuation (free)
 
@@ -73,6 +74,7 @@ Detection logic in `utils/detection.ts` checks if the last message is a tool_res
 ### Web Search Implementation
 
 Claude Code web search triggers a special request pattern (system prompt contains "performing a web search tool use"). The proxy:
+
 1. Detects this pattern in `detectWebSearchRequest()`
 2. Spawns `copilot` CLI subprocess with the query
 3. Parses output and returns in Anthropic `web_search_tool_result` format
@@ -84,11 +86,13 @@ Prefer `type` over `interface` for TypeScript definitions.
 ## Testing
 
 Tests require the proxy to be running (`pnpm dev` in another terminal):
+
 ```bash
 pnpm test  # Runs scripts/test-regression.sh
 ```
 
 For manual testing with Claude Code:
+
 ```bash
 tmux new-session -d -s test 'ANTHROPIC_BASE_URL=http://localhost:8080 ANTHROPIC_AUTH_TOKEN=dummy claude'
 tmux attach -t test

@@ -9,9 +9,20 @@ import { transformResponse } from './transform/response.js'
 import { createStreamTransformer } from './transform/streaming.js'
 import { executeWebSearch, formatAsToolResult } from './services/webSearch.js'
 import { isCopilotCLIAvailable } from './utils/validation.js'
-import { detectWebSearchRequest, isSuggestionRequest, isSidecarRequest, getXInitiator, getSystemText, hasImageContent } from './utils/detection.js'
+import {
+  detectWebSearchRequest,
+  isSuggestionRequest,
+  isSidecarRequest,
+  getXInitiator,
+  getSystemText,
+  hasImageContent,
+} from './utils/detection.js'
 import { estimateInputTokens } from './utils/tokenEstimator.js'
-import { buildEmptyStreamingResponse, buildEmptyNonStreamingResponse, setStreamingHeaders } from './utils/sse.js'
+import {
+  buildEmptyStreamingResponse,
+  buildEmptyNonStreamingResponse,
+  setStreamingHeaders,
+} from './utils/sse.js'
 import {
   buildWebSearchStreamingResponse,
   buildWebSearchNonStreamingResponse,
@@ -35,7 +46,7 @@ export type ProxyServerOptions = {
   logFullRequests?: boolean
   logger?: boolean | { level: string }
   logFile?: string
-  authFile?: string  // Path to auth file for token refresh saves
+  authFile?: string // Path to auth file for token refresh saves
   log?: (entry: Record<string, unknown>) => Promise<void>
   summarizeMessages?: (messages: Array<{ role: string; content: unknown }>) => Array<{
     role: string
@@ -209,7 +220,8 @@ export async function createProxyServer(options: ProxyServerOptions): Promise<Pr
     logFile,
     authFile,
     log = async () => {},
-    summarizeMessages = (msgs) => msgs.map(m => ({ role: m.role, contentPreview: '', contentLength: 0 })),
+    summarizeMessages = (msgs) =>
+      msgs.map((m) => ({ role: m.role, contentPreview: '', contentLength: 0 })),
   } = options
 
   // Check Copilot CLI availability for web search
@@ -238,9 +250,18 @@ export async function createProxyServer(options: ProxyServerOptions): Promise<Pr
       try {
         const fileStat = await stat(logFile)
         const content = await readFile(logFile, 'utf-8')
-        const entries = content.trim().split('\n').filter(Boolean).map((line) => {
-          try { return JSON.parse(line) } catch { return null }
-        }).filter(Boolean)
+        const entries = content
+          .trim()
+          .split('\n')
+          .filter(Boolean)
+          .map((line) => {
+            try {
+              return JSON.parse(line)
+            } catch {
+              return null
+            }
+          })
+          .filter(Boolean)
         return { modified: fileStat.mtimeMs, entries }
       } catch {
         return { modified: 0, entries: [] }
@@ -281,12 +302,32 @@ export async function createProxyServer(options: ProxyServerOptions): Promise<Pr
 
     // Route suggestion requests to free model
     if (isSuggestionRequest(anthropicRequest)) {
-      return handleFreeModelRequest(anthropicRequest, credentials, requestId, startTime, reply, fastify.log, log, authFile, 'suggestion')
+      return handleFreeModelRequest(
+        anthropicRequest,
+        credentials,
+        requestId,
+        startTime,
+        reply,
+        fastify.log,
+        log,
+        authFile,
+        'suggestion'
+      )
     }
 
     // Route sidecar requests (file tracking, title gen) to free model
     if (isSidecarRequest(anthropicRequest)) {
-      return handleFreeModelRequest(anthropicRequest, credentials, requestId, startTime, reply, fastify.log, log, authFile, 'sidecar')
+      return handleFreeModelRequest(
+        anthropicRequest,
+        credentials,
+        requestId,
+        startTime,
+        reply,
+        fastify.log,
+        log,
+        authFile,
+        'sidecar'
+      )
     }
 
     // Normal request - forward to Copilot
@@ -360,10 +401,24 @@ async function handleWebSearchRequest(
 
     if (request.stream) {
       setStreamingHeaders(reply)
-      return reply.send(buildWebSearchStreamingResponse(messageId, request.model, searchQuery, searchResult, formattedResult))
+      return reply.send(
+        buildWebSearchStreamingResponse(
+          messageId,
+          request.model,
+          searchQuery,
+          searchResult,
+          formattedResult
+        )
+      )
     }
 
-    return buildWebSearchNonStreamingResponse(messageId, request.model, searchQuery, searchResult, formattedResult)
+    return buildWebSearchNonStreamingResponse(
+      messageId,
+      request.model,
+      searchQuery,
+      searchResult,
+      formattedResult
+    )
   } catch (error) {
     logger.error({ msg: 'Web search failed', error: String(error) })
     const messageId = `msg_error_${requestId}`
@@ -381,7 +436,11 @@ async function handleFreeModelRequest(
   credentials: StoredCredentials,
   requestId: string,
   startTime: number,
-  reply: { header: (k: string, v: string) => void; send: (d: unknown) => unknown; code: (c: number) => void },
+  reply: {
+    header: (k: string, v: string) => void
+    send: (d: unknown) => unknown
+    code: (c: number) => void
+  },
   logger: { info: (obj: object) => void; error: (obj: object) => void },
   log: (entry: Record<string, unknown>) => Promise<void>,
   authFile?: string,
@@ -427,7 +486,9 @@ async function handleFreeModelRequest(
     reply.header('Connection', 'keep-alive')
 
     const estimatedTokens = estimateInputTokens(request)
-    const transformed = response.body!.pipeThrough(createStreamTransformer(FREE_MODEL, estimatedTokens))
+    const transformed = response.body!.pipeThrough(
+      createStreamTransformer(FREE_MODEL, estimatedTokens)
+    )
     return reply.send(transformed)
   }
 
@@ -453,7 +514,11 @@ async function handleNormalRequest(
   credentials: StoredCredentials,
   requestId: string,
   startTime: number,
-  reply: { header: (k: string, v: string) => void; send: (d: unknown) => unknown; code: (c: number) => void },
+  reply: {
+    header: (k: string, v: string) => void
+    send: (d: unknown) => unknown
+    code: (c: number) => void
+  },
   logger: { info: (obj: object) => void; error: (obj: object) => void },
   webSearchEnabled: boolean,
   logFullRequests: boolean,
@@ -501,7 +566,14 @@ async function handleNormalRequest(
     ...(logFullRequests && { fullRequest: requestWithTools }),
   })
 
-  logger.info({ msg: 'Incoming request', model: requestWithTools.model, mappedModel, messageCount: requestWithTools.messages.length, stream: requestWithTools.stream, hasTools: !!requestWithTools.tools?.length })
+  logger.info({
+    msg: 'Incoming request',
+    model: requestWithTools.model,
+    mappedModel,
+    messageCount: requestWithTools.messages.length,
+    stream: requestWithTools.stream,
+    hasTools: !!requestWithTools.tools?.length,
+  })
   logger.info({ msg: 'Billing', xInitiator, charged: !isSuggestion && xInitiator === 'user' })
 
   const openaiRequest = transformRequest(requestWithTools)
@@ -542,13 +614,17 @@ async function handleNormalRequest(
           type: 'response',
           statusCode: 200,
           responseTime: Date.now() - startTime,
-          rawCopilotResponse: logFullRequests ? rawChunks.join('') : rawChunks.join('').slice(0, 2000),
+          rawCopilotResponse: logFullRequests
+            ? rawChunks.join('')
+            : rawChunks.join('').slice(0, 2000),
         })
       },
     })
 
     const estimatedTokens = estimateInputTokens(requestWithTools)
-    const transformed = response.body!.pipeThrough(captureStream).pipeThrough(createStreamTransformer(openaiRequest.model, estimatedTokens))
+    const transformed = response
+      .body!.pipeThrough(captureStream)
+      .pipeThrough(createStreamTransformer(openaiRequest.model, estimatedTokens))
     return reply.send(transformed)
   }
 
@@ -563,7 +639,12 @@ async function handleNormalRequest(
     ...(logFullRequests && { fullResponse: openaiResponse }),
   })
 
-  logger.info({ msg: 'Copilot response', model: openaiResponse.model, finishReason: openaiResponse.choices[0]?.finish_reason, usage: openaiResponse.usage })
+  logger.info({
+    msg: 'Copilot response',
+    model: openaiResponse.model,
+    finishReason: openaiResponse.choices[0]?.finish_reason,
+    usage: openaiResponse.usage,
+  })
 
   return transformResponse(openaiResponse)
 }
@@ -587,19 +668,30 @@ async function handleCopilotError(
     error: errorText,
   })
 
-  logger.error({ msg: 'Copilot API error', status: response.status, statusText: response.statusText, body: errorText })
+  logger.error({
+    msg: 'Copilot API error',
+    status: response.status,
+    statusText: response.statusText,
+    body: errorText,
+  })
 
   reply.code(response.status)
   return {
     type: 'error',
-    error: { type: 'api_error', message: `Copilot API error: ${response.status} ${response.statusText} - ${errorText}` },
+    error: {
+      type: 'api_error',
+      message: `Copilot API error: ${response.status} ${response.statusText} - ${errorText}`,
+    },
   }
 }
 
 function estimateCharCount(body: AnthropicRequest): number {
   let charCount = 0
   if (body.system) {
-    charCount += typeof body.system === 'string' ? body.system.length : body.system.reduce((sum, b) => sum + b.text.length, 0)
+    charCount +=
+      typeof body.system === 'string'
+        ? body.system.length
+        : body.system.reduce((sum, b) => sum + b.text.length, 0)
   }
   for (const msg of body.messages) {
     if (typeof msg.content === 'string') {

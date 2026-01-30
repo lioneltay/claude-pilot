@@ -14,7 +14,9 @@ export type StoredCredentials = {
   copilotTokenExpiresAt: number
 }
 
-export async function loadCredentials(authFile = DEFAULT_AUTH_FILE): Promise<StoredCredentials | null> {
+export async function loadCredentials(
+  authFile = DEFAULT_AUTH_FILE
+): Promise<StoredCredentials | null> {
   try {
     const data = await readFile(authFile, 'utf-8')
     return JSON.parse(data) as StoredCredentials
@@ -23,12 +25,18 @@ export async function loadCredentials(authFile = DEFAULT_AUTH_FILE): Promise<Sto
   }
 }
 
-export async function saveCredentials(credentials: StoredCredentials, authFile = DEFAULT_AUTH_FILE): Promise<void> {
+export async function saveCredentials(
+  credentials: StoredCredentials,
+  authFile = DEFAULT_AUTH_FILE
+): Promise<void> {
   await mkdir(dirname(authFile), { recursive: true })
   await writeFile(authFile, JSON.stringify(credentials, null, 2))
 }
 
-export async function getValidCopilotToken(credentials: StoredCredentials, authFile = DEFAULT_AUTH_FILE): Promise<string> {
+export async function getValidCopilotToken(
+  credentials: StoredCredentials,
+  authFile = DEFAULT_AUTH_FILE
+): Promise<string> {
   // Refresh if token expires in less than 5 minutes
   const refreshThreshold = 5 * 60 * 1000
   const now = Date.now()

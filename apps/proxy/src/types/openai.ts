@@ -1,8 +1,6 @@
 // OpenAI Chat Completions API types (what Copilot expects)
 
-export type OpenAIMessageContent =
-  | string
-  | Array<OpenAITextContent | OpenAIImageContent>
+export type OpenAIMessageContent = string | Array<OpenAITextContent | OpenAIImageContent>
 
 export type OpenAITextContent = {
   type: 'text'

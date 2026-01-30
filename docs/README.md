@@ -9,6 +9,7 @@ This directory contains documentation for the Claude Code to GitHub Copilot prox
 This proxy allows you to run [Claude Code](https://github.com/anthropics/claude-code) using your GitHub Copilot subscription instead of paying for Anthropic API credits.
 
 **Key features:**
+
 - Full Claude Code functionality (chat, tools, streaming)
 - Web search via Copilot CLI (free!)
 - Cost optimization (~$0.04 per request, tool continuations free)
@@ -17,37 +18,43 @@ This proxy allows you to run [Claude Code](https://github.com/anthropics/claude-
 
 ## Documents
 
-| Document | Description |
-|----------|-------------|
-| [WEB_SEARCH.md](WEB_SEARCH.md) | How web search works, configuration, troubleshooting |
+| Document                             | Description                                            |
+| ------------------------------------ | ------------------------------------------------------ |
+| [WEB_SEARCH.md](WEB_SEARCH.md)       | How web search works, configuration, troubleshooting   |
 | [API_REFERENCE.md](API_REFERENCE.md) | TypeScript types, payload shapes, debugging techniques |
-| [TESTING.md](TESTING.md) | Manual testing, regression tests, tmux guide |
+| [TESTING.md](TESTING.md)             | Manual testing, regression tests, tmux guide           |
 
 ---
 
 ## Quick Links
 
 ### Getting Started
+
 See the main [README.md](../README.md) for setup instructions.
 
 ### Web Search
+
 Web search is enabled by default and costs **0 premium requests** (free).
+
 - [How it works](WEB_SEARCH.md#how-it-works)
 - [Configuration](WEB_SEARCH.md#configuration)
 - [Troubleshooting](WEB_SEARCH.md#troubleshooting)
 
 ### Testing
+
 - [Quick smoke test](TESTING.md#quick-smoke-test)
 - [Testing with tmux](TESTING.md#testing-with-tmux)
 - [Test cases (TC01-TC08)](TESTING.md#test-cases)
 - [Regression test script](TESTING.md#regression-test-script)
 
 ### Debugging & Development
+
 - [Debugging methodology](API_REFERENCE.md#debugging--reverse-engineering-methodology)
 - [Spy proxy technique](API_REFERENCE.md#technique-1-spy-proxy-intercept-real-api-traffic)
 - [Log analysis](TESTING.md#log-analysis)
 
 ### API Reference
+
 - [Web search request format](API_REFERENCE.md#1-web-search-execution-request-claude-code--api)
 - [Response TypeScript types](API_REFERENCE.md#2-web-search-response-api--claude-code)
 - [SSE streaming sequence](API_REFERENCE.md#3-sse-streaming-event-sequence)

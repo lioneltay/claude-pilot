@@ -105,8 +105,11 @@ function transformContentToOpenAI(content: string | AnthropicContentBlock[]): Op
 
 function extractToolCalls(content: AnthropicContentBlock[]): OpenAIToolCall[] {
   return content
-    .filter((block): block is { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> } =>
-      block.type === 'tool_use'
+    .filter(
+      (
+        block
+      ): block is { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> } =>
+        block.type === 'tool_use'
     )
     .map((block) => ({
       id: block.id,
@@ -132,9 +135,7 @@ function transformMessage(msg: AnthropicMessage): OpenAIMessage | OpenAIMessage[
             role: 'tool' as const,
             tool_call_id: block.tool_use_id,
             content:
-              typeof block.content === 'string'
-                ? block.content
-                : JSON.stringify(block.content),
+              typeof block.content === 'string' ? block.content : JSON.stringify(block.content),
           }
         })
       }
@@ -186,9 +187,7 @@ function transformToolChoice(
     case 'any':
       return 'required'
     case 'tool':
-      return toolChoice.name
-        ? { type: 'function', function: { name: toolChoice.name } }
-        : 'auto'
+      return toolChoice.name ? { type: 'function', function: { name: toolChoice.name } } : 'auto'
     default:
       return 'auto'
   }

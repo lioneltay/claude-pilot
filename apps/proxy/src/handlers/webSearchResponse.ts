@@ -23,9 +23,7 @@ type WebSearchResultItem = {
 /**
  * Build web_search_result items from sources
  */
-function buildWebSearchResults(
-  sources: WebSearchResult['sources']
-): WebSearchResultItem[] {
+function buildWebSearchResults(sources: WebSearchResult['sources']): WebSearchResultItem[] {
   return sources.map((source) => ({
     type: 'web_search_result',
     title: source.title,

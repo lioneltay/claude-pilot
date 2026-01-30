@@ -233,7 +233,7 @@ const HTML = `<!DOCTYPE html>
     loadLogs();
   </script>
 </body>
-</html>`;
+</html>`
 
 async function main() {
   const fastify = Fastify()
@@ -252,7 +252,11 @@ async function main() {
         .split('\n')
         .filter(Boolean)
         .map((line) => {
-          try { return JSON.parse(line) } catch { return null }
+          try {
+            return JSON.parse(line)
+          } catch {
+            return null
+          }
         })
         .filter(Boolean)
       return { modified: fileStat.mtimeMs, entries }

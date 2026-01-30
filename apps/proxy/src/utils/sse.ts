@@ -22,11 +22,7 @@ export function buildSSEStream(events: SSEEvent[]): string {
 /**
  * Create a message_start event
  */
-export function createMessageStart(
-  messageId: string,
-  model: string,
-  inputTokens = 0
-): SSEEvent {
+export function createMessageStart(messageId: string, model: string, inputTokens = 0): SSEEvent {
   return {
     type: 'message_start',
     message: {
@@ -83,10 +79,7 @@ export function createContentBlockStop(index: number): SSEEvent {
 /**
  * Create a message_delta event (end of message)
  */
-export function createMessageDelta(
-  stopReason: string,
-  outputTokens = 0
-): SSEEvent {
+export function createMessageDelta(stopReason: string, outputTokens = 0): SSEEvent {
   return {
     type: 'message_delta',
     delta: { stop_reason: stopReason, stop_sequence: null },
@@ -104,10 +97,7 @@ export function createMessageStop(): SSEEvent {
 /**
  * Build an empty streaming response (for blocked requests)
  */
-export function buildEmptyStreamingResponse(
-  messageId: string,
-  model: string
-): string {
+export function buildEmptyStreamingResponse(messageId: string, model: string): string {
   const events: SSEEvent[] = [
     createMessageStart(messageId, model),
     createMessageDelta('end_turn', 0),
@@ -119,10 +109,7 @@ export function buildEmptyStreamingResponse(
 /**
  * Build an empty non-streaming response (for blocked requests)
  */
-export function buildEmptyNonStreamingResponse(
-  messageId: string,
-  model: string
-): object {
+export function buildEmptyNonStreamingResponse(messageId: string, model: string): object {
   return {
     id: messageId,
     type: 'message',
@@ -138,9 +125,7 @@ export function buildEmptyNonStreamingResponse(
 /**
  * Set standard SSE headers on a reply object
  */
-export function setStreamingHeaders(
-  reply: { header: (k: string, v: string) => void }
-): void {
+export function setStreamingHeaders(reply: { header: (k: string, v: string) => void }): void {
   reply.header('Content-Type', 'text/event-stream')
   reply.header('Cache-Control', 'no-cache')
   reply.header('Connection', 'keep-alive')

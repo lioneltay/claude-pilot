@@ -38,10 +38,7 @@ export async function login(): Promise<void> {
   console.log('\nWaiting for authorization...')
 
   // Poll for access token
-  const githubToken = await pollForAccessToken(
-    deviceCode.device_code,
-    deviceCode.interval
-  )
+  const githubToken = await pollForAccessToken(deviceCode.device_code, deviceCode.interval)
   console.log('\n✓ GitHub authentication successful')
 
   // Exchange for Copilot token
@@ -50,11 +47,14 @@ export async function login(): Promise<void> {
   console.log('✓ Copilot token obtained')
 
   // Save credentials
-  await saveCredentials({
-    githubToken,
-    copilotToken: copilotToken.token,
-    copilotTokenExpiresAt: copilotToken.expiresAt,
-  }, AUTH_FILE)
+  await saveCredentials(
+    {
+      githubToken,
+      copilotToken: copilotToken.token,
+      copilotTokenExpiresAt: copilotToken.expiresAt,
+    },
+    AUTH_FILE
+  )
 
   console.log(`\n✓ Credentials saved to ${AUTH_FILE}`)
   console.log('\nYou can now start the proxy with: claude-pilot start')

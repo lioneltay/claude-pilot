@@ -22,9 +22,7 @@ export function getSystemText(request: AnthropicRequest): string {
 /**
  * Extract text content from a message
  */
-export function getMessageText(
-  message: AnthropicRequest['messages'][0]
-): string {
+export function getMessageText(message: AnthropicRequest['messages'][0]): string {
   if (typeof message.content === 'string') {
     return message.content
   }
@@ -38,9 +36,7 @@ export function getMessageText(
  * Detect if this is a dedicated web search execution request from Claude Code.
  * Returns the search query if detected, null otherwise.
  */
-export function detectWebSearchRequest(
-  request: AnthropicRequest
-): string | null {
+export function detectWebSearchRequest(request: AnthropicRequest): string | null {
   const systemText = getSystemText(request)
 
   if (!systemText.includes(WEB_SEARCH_SYSTEM_PATTERN)) {

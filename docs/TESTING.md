@@ -105,6 +105,7 @@ curl -X POST http://localhost:8080/v1/messages \
 ```
 
 **Expected:**
+
 - HTTP 200
 - Response contains `"type": "message"`
 - Response contains `"role": "assistant"`
@@ -131,6 +132,7 @@ curl -X POST http://localhost:8080/v1/messages \
 ```
 
 **Expected:**
+
 - Content-Type: text/event-stream
 - Events in order: `message_start`, `content_block_start`, `content_block_delta`(s), `content_block_stop`, `message_delta`, `message_stop`
 - Text content contains "1", "2", "3", "4", "5"
@@ -152,12 +154,14 @@ tmux kill-session -t claude-test
 ```
 
 **Expected:**
+
 - Server logs show: `Executing web search request`
 - Server logs show: `query: "..."` with search terms
 - Response includes search results or summary
 - Log file shows `"webSearch": true`
 
 **Verify in logs:**
+
 ```bash
 tail -5 logs/requests.jsonl | jq 'select(.webSearch == true)'
 ```
@@ -182,6 +186,7 @@ cat /tmp/test123.txt
 ```
 
 **Expected:**
+
 - File `/tmp/test123.txt` exists
 - File contains "hello world"
 - Server logs show tool_use in response
@@ -199,6 +204,7 @@ tail -20 logs/requests.jsonl | jq 'select(.blocked == true)'
 ```
 
 **Expected:**
+
 - Blocked requests show `"blocked": true, "reason": "suggestion"`
 - Response time is very fast (< 10ms)
 
@@ -208,13 +214,14 @@ tail -20 logs/requests.jsonl | jq 'select(.blocked == true)'
 
 **Purpose:** Verify Claude models map to correct Copilot models
 
-| Input Model | Expected Mapped Model |
-|-------------|----------------------|
-| claude-sonnet-4-20250514 | claude-sonnet-4 |
-| claude-3-5-sonnet-20241022 | claude-3.5-sonnet |
-| claude-3-opus-20240229 | claude-3-opus |
+| Input Model                | Expected Mapped Model |
+| -------------------------- | --------------------- |
+| claude-sonnet-4-20250514   | claude-sonnet-4       |
+| claude-3-5-sonnet-20241022 | claude-3.5-sonnet     |
+| claude-3-opus-20240229     | claude-3-opus         |
 
 **Verify in logs:**
+
 ```bash
 tail -10 logs/requests.jsonl | jq '{model, mappedModel}'
 ```
@@ -239,6 +246,7 @@ curl -X POST http://localhost:8080/v1/messages \
 ```
 
 **Expected:**
+
 - Error response with appropriate message
 - Server doesn't crash
 
@@ -259,6 +267,7 @@ curl -X POST http://localhost:8080/v1/messages/count_tokens \
 ```
 
 **Expected:**
+
 - Returns `{"input_tokens": <number>}`
 - Token count is approximately chars/4
 
@@ -269,6 +278,7 @@ curl -X POST http://localhost:8080/v1/messages/count_tokens \
 A regression test script is included at `scripts/test-regression.sh`.
 
 **Run tests:**
+
 ```bash
 pnpm test
 # or
@@ -276,6 +286,7 @@ pnpm test
 ```
 
 **Expected output:**
+
 ```
 === Claude Proxy Regression Tests ===
 Target: http://localhost:8080
@@ -297,6 +308,7 @@ Running TC06: Streaming event types...
 ```
 
 **Custom proxy URL:**
+
 ```bash
 PROXY_URL=http://localhost:9000 pnpm test
 ```
@@ -396,13 +408,13 @@ pnpm auth
 
 Expected response times:
 
-| Operation | Expected Time |
-|-----------|--------------|
-| Health check | < 10ms |
-| Non-streaming message | 2-5s |
-| Streaming first byte | < 2s |
-| Web search | 10-30s |
-| Blocked suggestion | < 5ms |
+| Operation             | Expected Time |
+| --------------------- | ------------- |
+| Health check          | < 10ms        |
+| Non-streaming message | 2-5s          |
+| Streaming first byte  | < 2s          |
+| Web search            | 10-30s        |
+| Blocked suggestion    | < 5ms         |
 
 ---
 

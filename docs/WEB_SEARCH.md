@@ -42,6 +42,7 @@ Claude Code displays "Did X searches" and shows results
 ### Key Discovery
 
 Claude Code doesn't use normal tool_result flow for web search. It sends a **separate API request** with:
+
 - System prompt: `"You are an assistant for performing a web search tool use"`
 - Message: `"Perform a web search for the query: {query}"`
 
@@ -103,11 +104,11 @@ Return JSON only:
 
 We return Anthropic's exact format:
 
-| Block | Type | Purpose |
-|-------|------|---------|
-| 0 | `server_tool_use` | The search query executed |
-| 1 | `web_search_tool_result` | Array of sources (for "Did X searches" count) |
-| 2 | `text` | Summary text |
+| Block | Type                     | Purpose                                       |
+| ----- | ------------------------ | --------------------------------------------- |
+| 0     | `server_tool_use`        | The search query executed                     |
+| 1     | `web_search_tool_result` | Array of sources (for "Did X searches" count) |
+| 2     | `text`                   | Summary text                                  |
 
 See `API_REFERENCE.md` for exact TypeScript types and payload shapes.
 
@@ -135,6 +136,7 @@ Web search isn't a normal tool_result flow. Claude Code intercepts `web_search` 
 ### 2. Anthropic's encrypted_content is Ignored
 
 The `encrypted_content` field in Anthropic's response is never used by Claude Code. Only these fields matter:
+
 - `title`
 - `url`
 - `page_age`
@@ -158,6 +160,7 @@ Since search is server-side, using `gpt-4.1` (free) gives identical search resul
 ### "Did 0 searches" in UI
 
 Your response is missing the `web_search_tool_result` block. Check that the response includes:
+
 ```json
 {
   "type": "web_search_tool_result",
@@ -181,6 +184,7 @@ Your response is missing the `web_search_tool_result` block. Check that the resp
 ### Request not detected as web search
 
 Check proxy logs for the incoming request. It should have:
+
 - System prompt containing `"performing a web search tool use"`
 - Single message with `"Perform a web search for the query:"`
 
@@ -227,11 +231,11 @@ Check proxy logs for the incoming request. It should have:
 
 ### API Endpoints
 
-| Endpoint | Purpose |
-|----------|---------|
-| `api.business.githubcopilot.com` | Business tier |
-| `api.individual.githubcopilot.com` | Individual tier |
-| `api.enterprise.githubcopilot.com` | Enterprise tier |
+| Endpoint                                      | Purpose                    |
+| --------------------------------------------- | -------------------------- |
+| `api.business.githubcopilot.com`              | Business tier              |
+| `api.individual.githubcopilot.com`            | Individual tier            |
+| `api.enterprise.githubcopilot.com`            | Enterprise tier            |
 | `api.business.githubcopilot.com/mcp/readonly` | MCP server (no web_search) |
 
 ---
@@ -239,18 +243,22 @@ Check proxy logs for the incoming request. It should have:
 ## Alternatives Considered
 
 ### 1. Direct Copilot API Call
+
 - **Result:** web_search not exposed via API
 - MCP server only has GitHub tools, not web_search
 
 ### 2. Implement Our Own Search
+
 - Would need: Search API (Tavily/SerpAPI/Bing) + page fetching + content extraction
 - More complex, additional costs
 
 ### 3. Wait for Official API
+
 - Copilot may expose web_search in the future
 - Not available now
 
 ### Chosen: Copilot CLI Subprocess
+
 - Works with existing subscription
 - No additional costs (gpt-4.1 is free)
 - Simple implementation

@@ -283,7 +283,7 @@ const HTML = `<!DOCTYPE html>
     loadLogs();
   </script>
 </body>
-</html>`;
+</html>`
 
 async function main() {
   const fastify = Fastify()

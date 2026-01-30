@@ -21,9 +21,9 @@ export const SUGGESTION_MODE_PATTERN = '[SUGGESTION MODE:'
 // Source: Claude Code v2.1.19 cli.js
 
 export const SIDECAR_PATTERNS = [
-  'Extract any file paths',           // File tracking after Bash commands
-  'Analyze if this message indicates a new conversation topic',  // Title generation
-  'Summarize this coding conversation',  // Title summarization
+  'Extract any file paths', // File tracking after Bash commands
+  'Analyze if this message indicates a new conversation topic', // Title generation
+  'Summarize this coding conversation', // Title summarization
 ]
 
 export const SUBAGENT_PATTERNS = [
@@ -40,7 +40,7 @@ export const SUBAGENT_PATTERNS = [
   // Claude Code guide agent
   'claude-code-guide',
   // Task tool generic agent (distinguishes from main conversation which has "interactive CLI tool")
-  'Given the user\'s message, you should use the tools available to complete the task',
+  "Given the user's message, you should use the tools available to complete the task",
 ]
 
 // Free models (0 premium multiplier)

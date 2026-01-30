@@ -21,6 +21,7 @@ claude-pilot
 ## Documentation
 
 See the [CLI documentation](packages/cli/README.md) for:
+
 - Prerequisites
 - All commands
 - Configuration

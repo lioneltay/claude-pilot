@@ -32,8 +32,13 @@ function summarizeMessages(messages: AnthropicMessage[]) {
       const content = msg.content as AnthropicContentBlock[]
       hasToolUse = content.some((b) => b.type === 'tool_use')
       hasToolResult = content.some((b) => b.type === 'tool_result')
-      const textBlocks = content.filter((b): b is { type: 'text'; text: string } => b.type === 'text')
-      contentPreview = textBlocks.map((b) => b.text.slice(0, 100)).join(' ').slice(0, 200)
+      const textBlocks = content.filter(
+        (b): b is { type: 'text'; text: string } => b.type === 'text'
+      )
+      contentPreview = textBlocks
+        .map((b) => b.text.slice(0, 100))
+        .join(' ')
+        .slice(0, 200)
       contentLength = JSON.stringify(msg.content).length
     }
 
