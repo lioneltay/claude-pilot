@@ -35,12 +35,19 @@ export function countRequestTokens(request: AnthropicRequest): number {
       tokens += countTokens(msg.content)
     } else {
       for (const block of msg.content) {
+        // Add overhead for block structure
+        tokens += 3
+
         if (block.type === 'text') {
           tokens += countTokens(block.text)
         } else if (block.type === 'tool_use') {
+          // Count id, name, and input
+          tokens += countTokens(block.id)
           tokens += countTokens(block.name)
           tokens += countTokens(JSON.stringify(block.input))
         } else if (block.type === 'tool_result') {
+          // Count tool_use_id
+          tokens += countTokens(block.tool_use_id)
           if (typeof block.content === 'string') {
             tokens += countTokens(block.content)
           } else if (Array.isArray(block.content)) {
