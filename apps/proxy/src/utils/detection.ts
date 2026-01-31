@@ -135,3 +135,28 @@ export function getXInitiator(request: AnthropicRequest): 'user' | 'agent' {
 
   return lastMessage.role === 'user' ? 'user' : 'agent'
 }
+
+/**
+ * Determine if a request should be routed to Copilot (in split mode)
+ *
+ * Routes to Copilot:
+ * - All main conversation requests (charged ~$0.04 for user messages)
+ * - All subagents (free as X-Initiator: agent)
+ * - All tool continuations (free as X-Initiator: agent)
+ *
+ * Routes to Anthropic:
+ * - Sidecars only (title gen, file tracking - reduces API noise)
+ */
+export function shouldUseCopilot(request: AnthropicRequest): boolean {
+  // Sidecars go to Anthropic (title gen, file tracking, etc.)
+  // These are frequent small utility requests - routing them to Anthropic
+  // reduces Copilot API noise while keeping costs minimal
+  if (isSidecarRequest(request)) {
+    return false
+  }
+
+  // Everything else goes to Copilot
+  // - Main conversation (user messages charged, tool continuations free)
+  // - Subagents (free as X-Initiator: agent)
+  return true
+}

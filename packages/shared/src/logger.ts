@@ -58,6 +58,8 @@ export type LogEntry = {
   responseTime?: number
   error?: string
   rawCopilotResponse?: string
+  // Routing info (split mode)
+  routedTo?: 'copilot' | 'anthropic'
   // Full data for debugging (optional, can be large)
   fullRequest?: unknown
   fullResponse?: unknown

@@ -2,7 +2,7 @@
 
 import { isDaemonRunning } from '../daemon.js'
 import { loadCredentials } from '@claude-pilot/proxy'
-import { AUTH_FILE } from '../config.js'
+import { AUTH_FILE, loadConfig } from '../config.js'
 
 export async function status(): Promise<void> {
   console.log('Claude Pilot Status\n')
@@ -28,9 +28,20 @@ export async function status(): Promise<void> {
     const startedAt = new Date(state.startedAt)
     const uptime = formatUptime(Date.now() - startedAt.getTime())
 
+    // Fetch current mode from proxy
+    let currentMode = 'unknown'
+    try {
+      const response = await fetch(`http://localhost:${state.port}/config`)
+      const config = (await response.json()) as { mode: string }
+      currentMode = config.mode
+    } catch {
+      // Ignore errors fetching mode
+    }
+
     console.log('Proxy: ✓ running')
     console.log(`  PID: ${state.pid}`)
     console.log(`  Port: ${state.port}`)
+    console.log(`  Mode: ${currentMode}`)
     console.log(`  Dashboard: http://localhost:${state.port}/`)
     console.log(`  Uptime: ${uptime}`)
     console.log(`  Started: ${startedAt.toLocaleString()}`)
@@ -39,7 +50,9 @@ export async function status(): Promise<void> {
     console.log(`  export ANTHROPIC_BASE_URL=http://localhost:${state.port}`)
     console.log(`  export ANTHROPIC_AUTH_TOKEN=dummy`)
   } else {
+    const config = loadConfig()
     console.log('Proxy: ✗ not running')
+    console.log(`  Mode: ${config.mode} (from config)`)
     console.log(`  Run 'claude-pilot start' to start the proxy`)
   }
 }

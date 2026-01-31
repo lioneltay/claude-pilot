@@ -62,14 +62,38 @@ Claude Code → POST /v1/messages (Anthropic format)
 - **services/webSearch.ts**: Spawns Copilot CLI for web search (free via gpt-4.1)
 - **auth/**: GitHub device flow auth, token refresh, credential storage
 
-### Billing Optimization
+### Routing Modes
 
-The proxy sets `X-Initiator` header based on request context:
+The proxy supports two modes via `MODE` environment variable:
+
+#### `copilot` (default)
+
+All requests go through GitHub Copilot API. Copilot sets `X-Initiator` header:
 
 - `user`: New user message (charged ~$0.04)
 - `agent`: Tool continuation (free)
 
-Detection logic in `utils/detection.ts` checks if the last message is a tool_result.
+#### `split`
+
+Routes requests based on type:
+
+- **To Copilot**: Main conversation, subagents, tool continuations
+  - User messages charged ~$0.04
+  - Subagents and tool continuations are free (X-Initiator: agent)
+- **To Anthropic**: Sidecars (title gen, file tracking)
+  - Cheaper per-token for small utility requests
+
+Requires `ANTHROPIC_API_KEY` environment variable.
+
+```bash
+MODE=split ANTHROPIC_API_KEY=sk-ant-... claude-pilot start
+```
+
+Benefits:
+
+- Reduces Copilot API noise (fewer small utility requests)
+- Accurate token counting via Anthropic API
+- Still uses request-based billing for Opus/Sonnet
 
 ### Web Search Implementation
 

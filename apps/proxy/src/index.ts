@@ -1,6 +1,9 @@
 // Claude Proxy - Main entry point
 
 import Fastify from 'fastify'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
+import { readFileSync } from 'node:fs'
 import { loadCredentials, getValidCopilotToken } from './auth/storage.js'
 import { transformRequest, mapModel, WEB_SEARCH_TOOL } from './transform/request.js'
 import { transformResponse } from './transform/response.js'
@@ -13,6 +16,7 @@ import {
   getXInitiator,
   getSystemText,
   hasImageContent,
+  shouldUseCopilot,
 } from './utils/detection.js'
 import { estimateInputTokens } from './utils/tokenEstimator.js'
 import { countRequestTokens } from './utils/tokenCounter.js'
@@ -34,8 +38,37 @@ const PORT = parseInt(process.env.PORT || String(DEFAULT_PORT), 10)
 const LOG_FULL_REQUESTS = process.env.LOG_FULL_REQUESTS === 'true'
 const ENABLE_WEB_SEARCH = process.env.ENABLE_WEB_SEARCH !== 'false'
 
+// Config file path (same as CLI uses)
+const CONFIG_DIR = join(homedir(), '.config', 'claude-pilot')
+const CONFIG_FILE = join(CONFIG_DIR, 'config.json')
+
+type ProxyMode = 'copilot' | 'split'
+
+function loadModeFromConfig(): ProxyMode {
+  try {
+    const data = readFileSync(CONFIG_FILE, 'utf-8')
+    const config = JSON.parse(data)
+    if (config.mode === 'copilot' || config.mode === 'split') {
+      return config.mode
+    }
+  } catch {
+    // Config doesn't exist or is invalid
+  }
+  return 'copilot'
+}
+
+
+// Mode: 'copilot' (default) - all requests go through Copilot
+//       'split' - sidecars go to Anthropic, everything else to Copilot
+// Loaded from config file, can be changed at runtime via /config endpoint
+let currentMode: ProxyMode = process.env.MODE
+  ? (process.env.MODE as ProxyMode)
+  : loadModeFromConfig()
+
+const ANTHROPIC_API_URL = 'https://api.anthropic.com'
+
 async function main() {
-  // Load credentials
+  // Load Copilot credentials
   const credentials = await loadCredentials()
   if (!credentials) {
     console.error('No credentials found. Run `pnpm auth` first to authenticate.')
@@ -43,6 +76,7 @@ async function main() {
   }
   console.log('Loaded credentials from ~/.config/claude-proxy/auth.json')
   console.log(`Logging to: ${getLogFilePath()}`)
+  console.log(`Mode: ${currentMode}`)
 
   // Check Copilot CLI availability for web search
   let webSearchEnabled = ENABLE_WEB_SEARCH
@@ -72,6 +106,25 @@ async function main() {
   // Health check
   fastify.get('/health', async () => ({ status: 'ok' }))
 
+  // Config endpoints for runtime mode changes
+  fastify.get('/config', async () => ({
+    mode: currentMode,
+  }))
+
+  fastify.post('/config', async (request) => {
+    const body = request.body as { mode?: string }
+
+    if (body.mode) {
+      if (body.mode !== 'copilot' && body.mode !== 'split') {
+        return { error: 'Invalid mode. Must be "copilot" or "split"' }
+      }
+      currentMode = body.mode
+      console.log(`Mode changed to: ${currentMode}`)
+    }
+
+    return { mode: currentMode }
+  })
+
   // Main messages endpoint
   fastify.post('/v1/messages', async (request, reply) => {
     const requestId = request.id as string
@@ -98,6 +151,12 @@ async function main() {
       return handleSuggestionRequest(anthropicRequest, requestId, startTime, reply, fastify.log)
     }
 
+    // Route based on mode
+    if (currentMode === 'split' && !shouldUseCopilot(anthropicRequest)) {
+      // Forward to Anthropic directly - passthrough proxy
+      return handleAnthropicPassthrough(request, reply, requestId, startTime, fastify.log)
+    }
+
     // Normal request - forward to Copilot
     return handleNormalRequest(
       anthropicRequest,
@@ -109,9 +168,34 @@ async function main() {
     )
   })
 
-  // Token counting endpoint (using tiktoken approximation)
+  // Token counting endpoint
   fastify.post('/v1/messages/count_tokens', async (request) => {
     const body = request.body as AnthropicRequest
+
+    // In split mode, passthrough to Anthropic for accurate counts
+    if (currentMode === 'split') {
+      try {
+        const headers: Record<string, string> = {}
+        for (const [key, value] of Object.entries(request.headers)) {
+          const k = key.toLowerCase()
+          if (k !== 'host' && k !== 'content-length' && typeof value === 'string') {
+            headers[key] = value
+          }
+        }
+        const response = await fetch(`${ANTHROPIC_API_URL}/v1/messages/count_tokens`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body),
+        })
+        if (response.ok) {
+          return response.json()
+        }
+      } catch {
+        // Fall through to tiktoken estimate
+      }
+    }
+
+    // Use tiktoken approximation
     const inputTokens = countRequestTokens(body)
     return { input_tokens: inputTokens }
   })
@@ -277,6 +361,7 @@ async function handleNormalRequest(
     messages: summarizeMessages(requestWithTools.messages),
     systemPreview,
     systemLength: systemText.length,
+    routedTo: 'copilot',
     ...(LOG_FULL_REQUESTS && { fullRequest: requestWithTools }),
   })
 
@@ -336,6 +421,7 @@ async function handleNormalRequest(
           type: 'response',
           statusCode: 200,
           responseTime: Date.now() - startTime,
+          routedTo: 'copilot',
           rawCopilotResponse: LOG_FULL_REQUESTS ? rawResponse : rawResponse.slice(0, 2000),
         })
       },
@@ -358,6 +444,7 @@ async function handleNormalRequest(
     type: 'response',
     statusCode: 200,
     responseTime: Date.now() - startTime,
+    routedTo: 'copilot',
     ...(LOG_FULL_REQUESTS && { fullResponse: openaiResponse }),
   })
 
@@ -369,6 +456,61 @@ async function handleNormalRequest(
   })
 
   return transformResponse(openaiResponse)
+}
+
+// Passthrough proxy to Anthropic (split mode) - forwards request as-is
+async function handleAnthropicPassthrough(
+  request: { url: string; headers: Record<string, unknown>; body: unknown },
+  reply: {
+    header: (k: string, v: string) => void
+    send: (d: unknown) => unknown
+    code: (c: number) => void
+  },
+  requestId: string,
+  startTime: number,
+  logger: { info: (obj: object) => void }
+) {
+  logger.info({ msg: 'Passthrough to Anthropic (split mode)' })
+
+  // Forward all headers except host/content-length (fetch handles these)
+  const headers: Record<string, string> = {}
+  for (const [key, value] of Object.entries(request.headers)) {
+    const k = key.toLowerCase()
+    if (k !== 'host' && k !== 'content-length' && typeof value === 'string') {
+      headers[key] = value
+    }
+  }
+
+  const response = await fetch(`${ANTHROPIC_API_URL}${request.url}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(request.body),
+  })
+
+  await log({
+    timestamp: new Date().toISOString(),
+    requestId,
+    type: 'request',
+    routedTo: 'anthropic',
+  })
+
+  reply.code(response.status)
+  for (const [key, value] of response.headers.entries()) {
+    const k = key.toLowerCase()
+    if (k !== 'content-encoding' && k !== 'transfer-encoding' && k !== 'content-length') {
+      reply.header(key, value)
+    }
+  }
+
+  await log({
+    timestamp: new Date().toISOString(),
+    requestId,
+    type: 'response',
+    statusCode: response.status,
+    responseTime: Date.now() - startTime,
+    routedTo: 'anthropic',
+  })
+  return reply.send(response.body)
 }
 
 // Handle Copilot API errors
@@ -387,6 +529,7 @@ async function handleCopilotError(
     type: 'error',
     statusCode: response.status,
     responseTime: Date.now() - startTime,
+    routedTo: 'copilot',
     error: errorText,
   })
 

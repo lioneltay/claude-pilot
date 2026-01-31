@@ -8,6 +8,7 @@ import { start } from './commands/start.js'
 import { stop } from './commands/stop.js'
 import { status } from './commands/status.js'
 import { dashboard } from './commands/dashboard.js'
+import { mode } from './commands/mode.js'
 import { isDaemonRunning } from './daemon.js'
 import { loadCredentials } from '@claude-pilot/proxy'
 import { DEFAULT_PORT, AUTH_FILE } from './config.js'
@@ -37,7 +38,7 @@ function getVersion(): string {
 const VERSION = getVersion()
 
 // Our built-in commands
-const BUILTIN_COMMANDS = ['login', 'logout', 'start', 'stop', 'status', 'dashboard', 'help']
+const BUILTIN_COMMANDS = ['login', 'logout', 'start', 'stop', 'status', 'dashboard', 'mode', 'help']
 
 // Check if the first argument is one of our commands
 function isBuiltinCommand(args: string[]): boolean {
@@ -204,6 +205,18 @@ async function main() {
         await dashboard()
       } catch (error) {
         console.error('Dashboard failed:', error instanceof Error ? error.message : error)
+        process.exit(1)
+      }
+    })
+
+  program
+    .command('mode [mode]')
+    .description('Get or set proxy routing mode (copilot or split)')
+    .action(async (newMode?: string) => {
+      try {
+        await mode(newMode)
+      } catch (error) {
+        console.error('Mode failed:', error instanceof Error ? error.message : error)
         process.exit(1)
       }
     })
