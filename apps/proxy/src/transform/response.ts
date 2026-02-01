@@ -18,7 +18,10 @@ function mapFinishReason(finishReason: string | null): AnthropicResponse['stop_r
   }
 }
 
-export function transformResponse(openai: OpenAIResponse): AnthropicResponse {
+export function transformResponse(
+  openai: OpenAIResponse,
+  calculatedInputTokens?: number
+): AnthropicResponse {
   const choice = openai.choices[0]
   if (!choice) {
     throw new Error('No choices in OpenAI response')
@@ -55,7 +58,9 @@ export function transformResponse(openai: OpenAIResponse): AnthropicResponse {
     stop_reason: mapFinishReason(choice.finish_reason),
     stop_sequence: null,
     usage: {
-      input_tokens: openai.usage.prompt_tokens,
+      // Use our calculated input tokens (tiktoken-based) if provided
+      // Copilot's prompt_tokens use GPT-4 tokenizer which differs from Claude's
+      input_tokens: calculatedInputTokens ?? openai.usage.prompt_tokens,
       output_tokens: openai.usage.completion_tokens,
     },
   }

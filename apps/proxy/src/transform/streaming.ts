@@ -34,7 +34,11 @@ function createMessageStartEvent(state: StreamState) {
   }
 }
 
-export function createStreamTransformer(model: string, estimatedInputTokens: number = 0) {
+export function createStreamTransformer(
+  model: string,
+  calculatedInputTokens: number = 0,
+  useCalculatedTokens: boolean = true
+) {
   const state: StreamState = {
     messageId: `msg_${Date.now()}`,
     model,
@@ -42,7 +46,7 @@ export function createStreamTransformer(model: string, estimatedInputTokens: num
     toolCalls: new Map(),
     inputTokens: 0,
     outputTokens: 0,
-    estimatedInputTokens,
+    estimatedInputTokens: calculatedInputTokens,
   }
 
   let sentMessageStart = false
@@ -193,8 +197,12 @@ export function createStreamTransformer(model: string, estimatedInputTokens: num
 
           const stopReason = mapFinishReason(choice.finish_reason)
 
-          // Get final usage from the chunk (OpenAI sends usage in the last chunk)
-          const inputTokens = openaiChunk.usage?.prompt_tokens || state.inputTokens
+          // Use our calculated input tokens (tiktoken-based) for consistency
+          // Copilot's prompt_tokens use GPT-4 tokenizer which differs from Claude's
+          // Use Copilot's output tokens since they're accurate for the generated response
+          const inputTokens = useCalculatedTokens
+            ? calculatedInputTokens
+            : (openaiChunk.usage?.prompt_tokens || state.inputTokens)
           const outputTokens = openaiChunk.usage?.completion_tokens || state.outputTokens
 
           emit(controller, {

@@ -18,7 +18,6 @@ import {
   hasImageContent,
   shouldUseCopilot,
 } from './utils/detection.js'
-import { estimateInputTokens } from './utils/tokenEstimator.js'
 import { countRequestTokens } from './utils/tokenCounter.js'
 import {
   buildEmptyStreamingResponse,
@@ -427,10 +426,10 @@ async function handleNormalRequest(
       },
     })
 
-    const estimatedTokens = estimateInputTokens(requestWithTools)
+    const calculatedTokens = countRequestTokens(requestWithTools)
     const transformed = response
       .body!.pipeThrough(captureStream)
-      .pipeThrough(createStreamTransformer(openaiRequest.model, estimatedTokens))
+      .pipeThrough(createStreamTransformer(openaiRequest.model, calculatedTokens))
 
     return reply.send(transformed)
   }
@@ -455,7 +454,8 @@ async function handleNormalRequest(
     usage: openaiResponse.usage,
   })
 
-  return transformResponse(openaiResponse)
+  const calculatedTokens = countRequestTokens(requestWithTools)
+  return transformResponse(openaiResponse, calculatedTokens)
 }
 
 // Passthrough proxy to Anthropic (split mode) - forwards request as-is

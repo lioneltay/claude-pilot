@@ -17,7 +17,7 @@ import {
   getSystemText,
   hasImageContent,
 } from './utils/detection.js'
-import { estimateInputTokens } from './utils/tokenEstimator.js'
+import { countRequestTokens } from './utils/tokenCounter.js'
 import {
   buildEmptyStreamingResponse,
   buildEmptyNonStreamingResponse,
@@ -485,16 +485,17 @@ async function handleFreeModelRequest(
     reply.header('Cache-Control', 'no-cache')
     reply.header('Connection', 'keep-alive')
 
-    const estimatedTokens = estimateInputTokens(request)
+    const calculatedTokens = countRequestTokens(request)
     const transformed = response.body!.pipeThrough(
-      createStreamTransformer(FREE_MODEL, estimatedTokens)
+      createStreamTransformer(FREE_MODEL, calculatedTokens)
     )
     return reply.send(transformed)
   }
 
   // Non-streaming
   const data = (await response.json()) as OpenAIResponse
-  const anthropicResponse = transformResponse(data)
+  const calculatedTokens = countRequestTokens(request)
+  const anthropicResponse = transformResponse(data, calculatedTokens)
 
   await log({
     timestamp: new Date().toISOString(),
@@ -621,10 +622,10 @@ async function handleNormalRequest(
       },
     })
 
-    const estimatedTokens = estimateInputTokens(requestWithTools)
+    const calculatedTokens = countRequestTokens(requestWithTools)
     const transformed = response
       .body!.pipeThrough(captureStream)
-      .pipeThrough(createStreamTransformer(openaiRequest.model, estimatedTokens))
+      .pipeThrough(createStreamTransformer(openaiRequest.model, calculatedTokens))
     return reply.send(transformed)
   }
 
@@ -646,7 +647,8 @@ async function handleNormalRequest(
     usage: openaiResponse.usage,
   })
 
-  return transformResponse(openaiResponse)
+  const calculatedTokens = countRequestTokens(requestWithTools)
+  return transformResponse(openaiResponse, calculatedTokens)
 }
 
 async function handleCopilotError(
