@@ -1,6 +1,24 @@
 # Claude Pilot
 
-A local proxy that routes [Claude Code](https://github.com/anthropics/claude-code) requests through GitHub Copilot's API.
+Run [Claude Code](https://docs.anthropic.com/en/docs/claude-code) through GitHub Copilot's AP.
+
+## Prerequisites
+
+### 1. GitHub Copilot Subscription
+
+You need an active GitHub Copilot subscription (Individual, Business, or Enterprise).
+
+### 2. [Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli)
+
+```bash
+npm install -g @github/copilot
+```
+
+### 3. [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
+
+```bash
+npm install -g @anthropic-ai/claude-code
+```
 
 ## Installation
 
@@ -18,40 +36,146 @@ claude-pilot login
 claude-pilot
 ```
 
-## Documentation
+## Features
 
-See the [CLI documentation](packages/cli/README.md) for:
+- **Web Search** - Works via Copilot CLI
+- **Auto Token Refresh** - Copilot tokens refresh automatically before expiry
+- **Dashboard** - Web-based log viewer at `http://localhost:51080/`
+- **Zero Config** - Proxy auto-starts and finds an available port
 
-- Prerequisites
-- All commands
-- Configuration
-- Troubleshooting
+## Commands
+
+### `claude-pilot`
+
+Run Claude Code with the proxy. If no arguments are provided, launches Claude Code interactively. Any arguments are passed through to Claude.
+
+```bash
+# Interactive mode
+claude-pilot
+
+# Pass arguments to claude
+claude-pilot --help
+claude-pilot "explain this codebase"
+```
+
+The proxy starts automatically if not already running.
+
+### `claude-pilot login`
+
+Authenticate with GitHub Copilot using the device flow.
+
+```bash
+claude-pilot login
+```
+
+This will:
+
+1. Display a code and URL
+2. Open GitHub in your browser
+3. Enter the code to authorize
+4. Save credentials to `~/.config/claude-pilot/auth.json`
+
+### `claude-pilot logout`
+
+Clear credentials and stop the proxy.
+
+```bash
+claude-pilot logout
+```
+
+### `claude-pilot start`
+
+Start the proxy server in the background.
+
+```bash
+claude-pilot start
+claude-pilot start -p 8080  # Custom port
+```
+
+### `claude-pilot stop`
+
+Stop the running proxy server.
+
+```bash
+claude-pilot stop
+```
+
+### `claude-pilot status`
+
+Show proxy status and authentication state.
+
+```bash
+claude-pilot status
+```
+
+### `claude-pilot dashboard`
+
+Open the log viewer dashboard in your browser.
+
+```bash
+claude-pilot dashboard
+```
+
+## Configuration
+
+All configuration is stored in `~/.config/claude-pilot/`:
+
+| File             | Description                     |
+| ---------------- | ------------------------------- |
+| `auth.json`      | GitHub and Copilot tokens       |
+| `daemon.json`    | Running proxy state (PID, port) |
+| `server.log`     | Proxy server logs               |
+| `requests.jsonl` | Request/response logs           |
 
 ## How It Works
 
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────────┐
-│ Claude Code │────▶│   Proxy     │────▶│ GitHub Copilot  │
-│   (CLI)     │◀────│  (Local)    │◀────│     API         │
-└─────────────┘     └─────────────┘     └─────────────────┘
-```
+Claude Pilot runs a local proxy that:
 
-The proxy translates between Anthropic's Messages API and OpenAI's Chat Completions format, allowing Claude Code to work with your existing GitHub Copilot subscription.
+1. Receives requests from Claude Code in Anthropic's Messages API format
+2. Transforms them to OpenAI's Chat Completions format
+3. Forwards to GitHub Copilot's API
+4. Transforms responses back to Anthropic format
 
-## Development
+This allows Claude Code to work with your existing GitHub Copilot subscription.
+
+## Troubleshooting
+
+### "Copilot CLI not found"
+
+Make sure the Copilot CLI is installed and in your PATH:
 
 ```bash
-# Install dependencies
-pnpm install
+copilot --version
+```
 
-# Start proxy with hot reload
-pnpm dev
+If not installed, see [Prerequisites](#2-copilot-cli).
 
-# Run tests
-pnpm test
+### "Claude CLI not found"
 
-# Type check
-pnpm typecheck
+Make sure Claude Code is installed:
+
+```bash
+claude --version
+```
+
+If not installed, see [Prerequisites](#3-claude-code).
+
+### "Token expired"
+
+Re-authenticate:
+
+```bash
+claude-pilot login
+```
+
+### Check logs
+
+```bash
+# Server logs
+cat ~/.config/claude-pilot/server.log
+
+# Request logs
+cat ~/.config/claude-pilot/requests.jsonl | jq .
 ```
 
 ## License
